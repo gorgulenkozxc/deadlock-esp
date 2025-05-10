@@ -7,15 +7,12 @@ use crate::settings::structs::Priority;
 
 use super::math::Vector3;
 
-#[derive(PartialEq)]
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-pub enum TargetBone
-{
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
+pub enum TargetBone {
     Head,
     Neck,
     Pelvis,
-    Chest
+    Chest,
 }
 
 impl TargetBone {
@@ -24,13 +21,13 @@ impl TargetBone {
             return match hero {
                 Hero::None => 0,
                 Hero::Infernus => 29,
-                Hero::Seven => 13, // GIGAWATT //
-                Hero::Vindicta => 6, // HORNET //
+                Hero::Seven => 13,     // GIGAWATT //
+                Hero::Vindicta => 6,   // HORNET //
                 Hero::LadyGeist => 10, // GHOST //
-                Hero::Abrams => 44, // ATLAS //
+                Hero::Abrams => 44,    // ATLAS //
                 Hero::Wraith => 6,
                 Hero::McGinnis => 6, // ENGINEER/FORGE //
-                Hero::Paradox => 7, // CHRONO //
+                Hero::Paradox => 7,  // CHRONO //
                 Hero::Dynamo => 12,
                 Hero::Kelvin => 11,
                 Hero::Haze => 12,
@@ -40,23 +37,22 @@ impl TargetBone {
                 Hero::GreyTalon => 16,
                 Hero::MoAndKrill => 9, // DIGGER //
                 Hero::Shiv => 12,
-                Hero::Ivy => 12, // TENGU //
+                Hero::Ivy => 12,   // TENGU //
                 Hero::Viper => 11, // KALI //
                 Hero::Warden => 10,
                 Hero::Yamato => 33,
                 Hero::Lash => 11,
                 Hero::Viscous => 6,
-                Hero::Wrecker => 7, 
+                Hero::Wrecker => 7,
                 Hero::Pocket => 12, // SYNTH //
                 Hero::Mirage => 6,
                 Hero::Fathom => 11, // SLORK //
                 Hero::Dummy => 17,
-                Hero::Magician => 12, 
-                Hero::Trapper => 12, 
+                Hero::Magician => 12,
+                Hero::Trapper => 12,
                 Hero::Raven => 34,
-            }
-        }
-        else if *self == TargetBone::Pelvis {
+            };
+        } else if *self == TargetBone::Pelvis {
             return match hero {
                 Hero::None => 0,
                 Hero::Infernus => 36,
@@ -70,29 +66,29 @@ impl TargetBone {
                 Hero::Dynamo => 7,
                 Hero::Kelvin => 6,
                 Hero::Haze => 7,
-                Hero::Holliday => 32, 
+                Hero::Holliday => 32,
                 Hero::Bebop => 0,
-                Hero::Calico => 7, 
+                Hero::Calico => 7,
                 Hero::GreyTalon => 7,
                 Hero::MoAndKrill => 4,
                 Hero::Shiv => 7,
                 Hero::Ivy => 7,
-                Hero::Viper => 7, 
+                Hero::Viper => 7,
                 Hero::Warden => 5,
                 Hero::Yamato => 6,
                 Hero::Lash => 6,
                 Hero::Viscous => 1,
-                Hero::Wrecker => 2, 
-                Hero::Pocket =>  7,
+                Hero::Wrecker => 2,
+                Hero::Pocket => 7,
                 Hero::Mirage => 2,
-                Hero::Fathom => 27, 
+                Hero::Fathom => 27,
                 Hero::Dummy => 6,
-                Hero::Magician => 7, 
+                Hero::Magician => 7,
                 Hero::Trapper => 7,
                 Hero::Raven => 1,
-            }
-        }
-        else if *self == TargetBone::Chest { // SPINE_3
+            };
+        } else if *self == TargetBone::Chest {
+            // SPINE_3
             return match hero {
                 Hero::None => 0,
                 Hero::Infernus => 11,
@@ -106,37 +102,35 @@ impl TargetBone {
                 Hero::Dynamo => 46,
                 Hero::Kelvin => 10,
                 Hero::Haze => 11,
-                Hero::Holliday => 11, 
+                Hero::Holliday => 11,
                 Hero::Bebop => 4,
                 Hero::Calico => 11,
                 Hero::GreyTalon => 15,
                 Hero::MoAndKrill => 8, // 23
                 Hero::Shiv => 11,
                 Hero::Ivy => 11,
-                Hero::Viper => 9, 
+                Hero::Viper => 9,
                 Hero::Warden => 9,
                 Hero::Yamato => 18,
                 Hero::Lash => 10,
                 Hero::Viscous => 4,
                 Hero::Wrecker => 6,
-                Hero::Pocket =>  11,
+                Hero::Pocket => 11,
                 Hero::Mirage => 5,
-                Hero::Fathom => 11, 
+                Hero::Fathom => 11,
                 Hero::Dummy => 10,
-                Hero::Magician => 21, 
+                Hero::Magician => 21,
                 Hero::Trapper => 11,
                 Hero::Raven => 8,
-            }
+            };
         }
         0
     }
 }
 
-#[derive(Debug)]
-#[derive(PartialEq, Eq)]
-#[derive(Clone, Copy)]
-pub enum Hero
-{
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub enum Hero {
+    #[default]
     None = 0,
     Infernus = 1,
     Seven = 2,
@@ -168,7 +162,7 @@ pub enum Hero
     Dummy = 55,
     Magician = 60,
     Trapper = 61,
-    Raven = 62
+    Raven = 62,
 }
 
 impl std::fmt::Display for Hero {
@@ -177,18 +171,9 @@ impl std::fmt::Display for Hero {
     }
 }
 
-impl Default for Hero
-{
-    fn default() -> Self {
-        Hero::None
-    }
-}
-
-impl Hero
-{
+impl Hero {
     /// Возвращает индекс кости игрока
-    pub fn get_head_bone(self) -> Option<i32>
-    {
+    pub fn get_head_bone(self) -> Option<i32> {
         match self {
             Hero::Infernus => Some(30),
             Hero::Seven => Some(14),
@@ -221,12 +206,12 @@ impl Hero
             Hero::Magician => Some(13),
             Hero::Trapper => Some(13),
             Hero::Raven => Some(7),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_icon(self) -> ImageSource<'static> {
-        return match self {
+        match self {
             Hero::None => egui::include_image!("../../../icons/None.png"),
             Hero::Infernus => egui::include_image!("../../../icons/Infernus.png"),
             Hero::Seven => egui::include_image!("../../../icons/Seven.png"),
@@ -259,13 +244,12 @@ impl Hero
             Hero::Trapper => egui::include_image!("../../../icons/None.png"),
             Hero::Viper => egui::include_image!("../../../icons/None.png"),
             Hero::Raven => egui::include_image!("../../../icons/None.png"),
-            _ => egui::include_image!("../../../icons/None.png")
-        };
+            _ => egui::include_image!("../../../icons/None.png"),
+        }
     }
 }
 
-impl TryFrom<i32> for Hero
-{
+impl TryFrom<i32> for Hero {
     type Error = ();
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
@@ -310,37 +294,27 @@ impl TryFrom<i32> for Hero
     }
 }
 
-#[derive(PartialEq, Eq)]
-#[derive(Clone, Copy)]
-pub enum EntityType
-{
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum EntityType {
     None,
     Soul,
-    Creep
+    Creep,
 }
 
-impl EntityType
-{
+impl EntityType {
     ///name - 7 байт
-    pub fn from_class_name(name: Vec<u8>) -> Option<EntityType>
-    {
+    pub fn from_class_name(name: Vec<u8>) -> Option<EntityType> {
         let designer_name = String::from_utf8(name).unwrap_or_default();
-        if designer_name == "item_xp"
-        {
+        if designer_name == "item_xp" {
             Some(Self::Soul)
-        }
-        else if designer_name == "npc_tro"
-        {
+        } else if designer_name == "npc_tro" {
             Some(Self::Creep)
-        }
-        else
-        {
+        } else {
             None
         }
     }
 
-    pub fn as_priority(self) -> u8
-    {
+    pub fn as_priority(self) -> u8 {
         match self {
             EntityType::None => 0,
             EntityType::Creep => 1,
@@ -348,9 +322,8 @@ impl EntityType
         }
     }
 
-    pub fn as_priority_2(self, priority: Priority) -> u8
-    {
-        if priority == Priority::Souls{
+    pub fn as_priority_2(self, priority: Priority) -> u8 {
+        if priority == Priority::Souls {
             match self {
                 EntityType::None => 0,
                 EntityType::Creep => 1,
@@ -366,17 +339,15 @@ impl EntityType
     }
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(u16)]
 pub enum AbilitySlot {
     ESlot_Invalid = 0xffff,
-    ESlot_Signature_1 = 0x0,            // Абилки
+    ESlot_Signature_1 = 0x0, // Абилки
     ESlot_Signature_2 = 0x1,
     ESlot_Signature_3 = 0x2,
     ESlot_Signature_4 = 0x3,
-    ESlot_ActiveItem_1 = 0x4,           // Шмотки?
+    ESlot_ActiveItem_1 = 0x4, // Шмотки?
     ESlot_ActiveItem_2 = 0x5,
     ESlot_ActiveItem_3 = 0x6,
     ESlot_ActiveItem_4 = 0x7,
@@ -397,13 +368,11 @@ pub enum AbilitySlot {
     ESlot_None = 0x16, // EMaxAbilitySlots
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(u8)]
 pub enum EJumpType {
-    EJumpType_Ground = 0,
-    EJumpType_Air = 1,
-    EJumpType_Wall = 2,
-    EJumpType_DashJump = 3,
+    Ground = 0,
+    Air = 1,
+    Wall = 2,
+    DashJump = 3,
 }

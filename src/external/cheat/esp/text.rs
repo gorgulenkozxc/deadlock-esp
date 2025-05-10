@@ -1,7 +1,8 @@
 use egui::{Align2, Pos2, Rect};
 
 use crate::{
-    external::interfaces::{entities::Player, math::Vector3}, settings::structs::{Settings, TextSettings},
+    external::interfaces::{entities::Player, math::Vector3},
+    settings::structs::{Settings, TextSettings},
 };
 
 use super::healthbar;
@@ -26,7 +27,14 @@ pub fn draw(g: &egui::Painter, player: &Player, local_player: &Player, settings:
         g,
         player.rect,
         &settings.esp_players.text_distance,
-        format!("{}m", (Vector3::distance(player.game_scene_node.position, local_player.game_scene_node.position) * 0.0254).round()),
+        format!(
+            "{}m",
+            (Vector3::distance(
+                player.game_scene_node.position,
+                local_player.game_scene_node.position
+            ) * 0.0254)
+                .round()
+        ),
         &mut offsets,
     );
 }
@@ -38,8 +46,7 @@ fn draw_text(
     text: String,
     offsets: &mut (f32, f32, f32, f32),
 ) {
-    if !settings.enable
-    {
+    if !settings.enable {
         return;
     }
     let mut pos = Pos2 { x: 0., y: 0. };
@@ -73,8 +80,10 @@ fn draw_text(
             y: rect.bottom() + offsets.3 + healthbar::get_height(rect.width()),
         };
     }
-    let mut font = egui::FontId::default();
-    font.size = settings.font_size;
+    let font = egui::FontId {
+        size: settings.font_size,
+        ..egui::FontId::default()
+    };
     if settings.shadow {
         g.text(
             Pos2 {

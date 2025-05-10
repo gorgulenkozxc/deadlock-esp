@@ -1,40 +1,51 @@
 pub mod structs;
-use crate::{external::interfaces::enums::TargetBone, input::keyboard::{Key, KeyState}};
+use crate::{
+    external::interfaces::enums::TargetBone,
+    input::keyboard::{Key, KeyState},
+};
 use egui::{Align2, Color32, Pos2};
-use structs::{AimProperties, AimSettings, BoxType, EspPlayers, GlobalSettings, HealthbarSettings, OffscreenSettings, RadarSettings, TextSettings};
+use structs::{
+    AimProperties, AimSettings, BoxType, EspPlayers, GlobalSettings, HealthbarSettings,
+    OffscreenSettings, RadarSettings, TextSettings,
+};
 
-pub mod mgr
-{
-    use std::{fs::{create_dir, read_dir, remove_file, File}, io::{Read, Write}, path::PathBuf};
+pub mod mgr {
+    use std::{
+        fs::{create_dir, read_dir, remove_file, File},
+        io::{Read, Write},
+        path::PathBuf,
+    };
 
     use super::structs::Settings;
 
-    pub fn initialize()
-    {
+    pub fn initialize() {
         _ = get_path();
     }
 
-    pub fn get_configs()  -> Vec<String>
-    {
+    pub fn get_configs() -> Vec<String> {
         let path: PathBuf = get_path();
         let mut files: Vec<String> = Vec::new();
-        for entry in read_dir(path).unwrap()
-        {
+        for entry in read_dir(path).unwrap() {
             let entry = entry.unwrap();
             let file_path = entry.path();
-            if file_path.is_file() && file_path.extension().unwrap_or_default() == "cjson"
-            {
-                files.push(file_path.file_name().unwrap().to_str().unwrap().to_owned().replace(".cjson", ""));
+            if file_path.is_file() && file_path.extension().unwrap_or_default() == "cjson" {
+                files.push(
+                    file_path
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_owned()
+                        .replace(".cjson", ""),
+                );
             }
         }
         files
     }
 
-    fn get_path() -> PathBuf
-    {
+    fn get_path() -> PathBuf {
         let path = std::env::current_dir().unwrap().join("configs");
-        if !path.exists()
-        {
+        if !path.exists() {
             create_dir(path.clone()).unwrap();
             log::warn!("Created directory: {}", path.display());
             println!("{:?}", path.clone());
@@ -42,11 +53,9 @@ pub mod mgr
         path
     }
 
-    pub fn save(settings: &Settings, file_name: &str)
-    {
+    pub fn save(settings: &Settings, file_name: &str) {
         let file_name = get_path().join(file_name);
-        if file_name.exists()
-        {
+        if file_name.exists() {
             remove_file(file_name.clone()).unwrap();
             log::info!("Deleted file: {:?}", file_name.clone());
         }
@@ -59,22 +68,18 @@ pub mod mgr
 
     pub fn delete(file_name: &str) {
         let file_name = get_path().join(file_name);
-        if file_name.exists()
-        {
+        if file_name.exists() {
             remove_file(file_name.clone()).unwrap();
             log::info!("Deleted file: {:?}", file_name.clone());
-        }
-        else {
+        } else {
             log::warn!("File not found: {:?}", file_name);
         }
     }
 
     /// возвращает результат (успешно или нет)
-    pub fn change(settings: &mut Settings, file_name: &str) -> bool
-    {
+    pub fn change(settings: &mut Settings, file_name: &str) -> bool {
         let path = get_path().join(file_name);
-        if path.exists()
-        {
+        if path.exists() {
             let mut file = File::open(path.clone()).unwrap();
             let mut data = String::new();
             file.read_to_string(&mut data).unwrap();
@@ -86,12 +91,10 @@ pub mod mgr
             // *settings = serde_json::from_str(&data).unwrap_or(Settings::default());
             log::info!("Deserialized file: {:?}", path.display());
             return true;
-        }
-        else
-        {
+        } else {
             log::info!("File not found: {:?}", path.display());
         }
-        return false;
+        false
     }
 }
 
@@ -99,7 +102,7 @@ impl Default for EspPlayers {
     fn default() -> Self {
         Self {
             stroke_width: 1f32,
-            outline_color: Color32::from_rgba_unmultiplied(210,229,0,150),
+            outline_color: Color32::from_rgba_unmultiplied(210, 229, 0, 150),
             fill_color: Color32::from_rgba_unmultiplied(0, 0, 0, 35),
             box_type: BoxType::Edges,
             outline_rect: true,
@@ -113,7 +116,7 @@ impl Default for EspPlayers {
             shadow: true,
             shadow_color: Color32::from_rgba_unmultiplied(0, 0, 0, 30),
             shadow_size: 5.5f32,
-            shadow_blur: 4f32
+            shadow_blur: 4f32,
         }
     }
 }
@@ -138,7 +141,7 @@ impl Default for OffscreenSettings {
             radius: 200f32,
             icon_size: 25f32,
         }
-   }
+    }
 }
 
 impl Default for TextSettings {
@@ -153,8 +156,7 @@ impl Default for TextSettings {
     }
 }
 
-impl Default for AimProperties
-{
+impl Default for AimProperties {
     fn default() -> Self {
         Self {
             enable: true,
@@ -163,7 +165,10 @@ impl Default for AimProperties
             velocity_prediction: true,
             rcs: true,
             range: 2200.,
-            key: Key { state: KeyState::None, code: 6 },
+            key: Key {
+                state: KeyState::None,
+                code: 6,
+            },
             targeting: true,
             velocity_div_dav: 18f32,
             color: Color32::from_rgba_unmultiplied(255, 255, 255, 30),
@@ -186,16 +191,14 @@ impl Default for RadarSettings {
             color_team: Color32::from_rgba_unmultiplied(75, 192, 117, 180),
             scale: 40.,
             icon_size: 20f32,
-            icons: false
+            icons: false,
         }
     }
 }
 
-impl Default for HealthbarSettings
-{
+impl Default for HealthbarSettings {
     fn default() -> Self {
-        Self
-        {
+        Self {
             background_color: Color32::from_rgba_unmultiplied(255, 0, 0, 200),
             outline_color: Color32::BLACK,
             hp_color: Color32::WHITE,
@@ -204,24 +207,23 @@ impl Default for HealthbarSettings
     }
 }
 
-impl Default for AimSettings
-{
-    
+impl Default for AimSettings {
     fn default() -> Self {
         let players = AimProperties::default();
-        let mut creeps = AimProperties::default();
-        creeps.targeting = false;
+        let mut creeps = AimProperties {
+            targeting: false,
+            ..AimProperties::default()
+        };
         creeps.key.code = 5;
         creeps.fov += 10f32;
-        Self
-        {
+        Self {
             angle_per_pixel: 0f32,
             creep_color: Color32::RED,
-            soul_color: Color32::from_rgba_unmultiplied(208,96,255,255),
+            soul_color: Color32::from_rgba_unmultiplied(208, 96, 255, 255),
             players,
             creeps,
             aim_bone: TargetBone::Neck,
-            priority: structs::Priority::Souls
+            priority: structs::Priority::Souls,
         }
     }
 }

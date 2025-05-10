@@ -2,10 +2,22 @@ use std::{io::Read, path::PathBuf};
 
 use egui::{Context, FontData, FontDefinitions, Ui};
 use egui_notify::Toasts;
-use windows::Win32::UI::{Input::KeyboardAndMouse::GetAsyncKeyState, WindowsAndMessaging::SetForegroundWindow};
+use windows::Win32::UI::{
+    Input::KeyboardAndMouse::GetAsyncKeyState, WindowsAndMessaging::SetForegroundWindow,
+};
 
-use crate::{external::{cheat::aim, interfaces::enums::{Hero, TargetBone}}, input::keyboard::{Key, VirtualKeys}, settings::{self, mgr, structs::{AimProperties, AimSettings, Priority}}};
 use super::{localization::Lang, overlay::Overlay};
+use crate::{
+    external::{
+        cheat::aim,
+        interfaces::enums::{Hero, TargetBone},
+    },
+    input::keyboard::{Key, VirtualKeys},
+    settings::{
+        self, mgr,
+        structs::{AimProperties, AimSettings, Priority},
+    },
+};
 
 pub fn draw_windows(overlay: &mut Overlay, ctx: &Context, ui: &mut Ui) {
     draw_main(overlay, ctx, ui);
@@ -15,65 +27,88 @@ pub fn draw_windows(overlay: &mut Overlay, ctx: &Context, ui: &mut Ui) {
 }
 
 fn draw_scripts(overlay: &mut Overlay, ctx: &Context, _ui: &mut Ui) {
-    egui::Window::new("Scripts").auto_sized().max_height(250f32).show(ctx, |ui| {
-        egui::ScrollArea::vertical().auto_shrink(true).show(ui, |ui| {
-            egui::Grid::new("script_grid").num_columns(1).min_col_width(200f32).max_col_width(200f32).show(ui, |ui| {
-                for s in overlay.hero_scripts.iter_mut() {
-                    let script = s.0.lock().unwrap();
-                    let script_settings = &mut s.1;
-    
-                    ui.group(|ui| {
-                        ui.vertical(|ui| {
-                            let hero = script.hero_id();
-                            if hero == Hero::None {
-                                ui.label(format!("{}: Any", overlay.lang.script_hero()));
+    egui::Window::new("Scripts")
+        .auto_sized()
+        .max_height(250f32)
+        .show(ctx, |ui| {
+            egui::ScrollArea::vertical()
+                .auto_shrink(true)
+                .show(ui, |ui| {
+                    egui::Grid::new("script_grid")
+                        .num_columns(1)
+                        .min_col_width(200f32)
+                        .max_col_width(200f32)
+                        .show(ui, |ui| {
+                            for s in overlay.hero_scripts.iter_mut() {
+                                let script = s.0.lock().unwrap();
+                                let script_settings = &mut s.1;
+
+                                ui.group(|ui| {
+                                    ui.vertical(|ui| {
+                                        let hero = script.hero_id();
+                                        if hero == Hero::None {
+                                            ui.label(format!(
+                                                "{}: Any",
+                                                overlay.lang.script_hero()
+                                            ));
+                                        } else {
+                                            ui.label(format!(
+                                                "{}: {:?}",
+                                                overlay.lang.script_hero(),
+                                                hero
+                                            ));
+                                        }
+                                        ui.label(script.name().to_string()); //ui.label(format!("Name: {}", script.name()));
+                                        ui.checkbox(
+                                            &mut script_settings.enabled,
+                                            overlay.lang.enable(),
+                                        );
+                                        if script_settings.key.clone().is_some() {
+                                            ui.label(format!(
+                                                "key code: {}",
+                                                script_settings.key.unwrap().code
+                                            ));
+                                        }
+                                        ui.horizontal(|ui| {
+                                            ui.add_space(200f32);
+                                        });
+                                    });
+                                });
+                                ui.end_row();
                             }
-                            else {
-                                ui.label(format!("{}: {:?}", overlay.lang.script_hero(), hero));
-                            }
-                            ui.label(format!("{}", script.name())); //ui.label(format!("Name: {}", script.name()));
-                            ui.checkbox(&mut script_settings.enabled, overlay.lang.enable());
-                            if script_settings.key.clone().is_some() {
-                                ui.label(format!("key code: {}", script_settings.key.unwrap().code));
-                            }
-                            ui.horizontal(|ui| {
-                                ui.add_space(200f32);
-                            });
                         });
-                    });
-                    ui.end_row();
+                });
+            ui.horizontal(|ui| {
+                if ui.button(overlay.lang.script_enable_all()).clicked() {
+                    for s in overlay.hero_scripts.iter_mut() {
+                        s.1.enabled = true;
+                    }
+                }
+                if ui.button(overlay.lang.script_disable_all()).clicked() {
+                    for s in overlay.hero_scripts.iter_mut() {
+                        s.1.enabled = false;
+                    }
                 }
             });
         });
-        ui.horizontal(|ui| {
-            
-            if ui.button(overlay.lang.script_enable_all()).clicked() {
-                for s in overlay.hero_scripts.iter_mut() {
-                    s.1.enabled = true;
-                }
-            }
-            if ui.button(overlay.lang.script_disable_all()).clicked() {
-                for s in overlay.hero_scripts.iter_mut() {
-                    s.1.enabled = false;
-                }
-            }
-        });
-    });
 }
 
 fn draw_config(overlay: &mut Overlay, ui: &mut Ui) {
     ui.label(overlay.lang.config());
     ui.horizontal(|ui| {
         let mut btn_text = overlay.lang.config_create();
-        ui.add(egui::TextEdit::singleline(&mut overlay.current_config).desired_width(100f32).hint_text("default"));
-        if overlay.configs.contains(&overlay.current_config)
-        {
+        ui.add(
+            egui::TextEdit::singleline(&mut overlay.current_config)
+                .desired_width(100f32)
+                .hint_text("default"),
+        );
+        if overlay.configs.contains(&overlay.current_config) {
             btn_text = overlay.lang.config_save();
         }
         if ui.button(btn_text).clicked() {
             let mut conf_name = overlay.current_config.to_owned();
             conf_name.push_str(".cjson");
-            mgr::save(&mut overlay.settings, &conf_name);
+            mgr::save(&overlay.settings, &conf_name);
             overlay.toasts.info(overlay.lang.config_saved());
             overlay.configs = settings::mgr::get_configs();
         }
@@ -82,25 +117,25 @@ fn draw_config(overlay: &mut Overlay, ui: &mut Ui) {
     ui.group(|ui| {
         for c in overlay.configs.iter() {
             ui.horizontal(|ui| {
-                    if ui.button(overlay.lang.config_load()).clicked() {
-                        let mut conf_name = c.to_owned();
-                        conf_name.push_str(".cjson");
-                        if mgr::change(&mut overlay.settings, &conf_name) {
-                            overlay.toasts.info(overlay.lang.config_loaded());
-                        } else {
-                            overlay.toasts.error(overlay.lang.config_failed());
-                        }
+                if ui.button(overlay.lang.config_load()).clicked() {
+                    let mut conf_name = c.to_owned();
+                    conf_name.push_str(".cjson");
+                    if mgr::change(&mut overlay.settings, &conf_name) {
+                        overlay.toasts.info(overlay.lang.config_loaded());
+                    } else {
+                        overlay.toasts.error(overlay.lang.config_failed());
                     }
-                    if ui.button(overlay.lang.config_delete()).clicked() {
-                        let mut conf_name = c.to_owned();
-                        conf_name.push_str(".cjson");
-                        mgr::delete(&conf_name);
-                        deleted = true;
-                        overlay.toasts.info(overlay.lang.config_deleted());
-                    }
-                    ui.add_space(10f32);
-                    ui.label(c);
-                });
+                }
+                if ui.button(overlay.lang.config_delete()).clicked() {
+                    let mut conf_name = c.to_owned();
+                    conf_name.push_str(".cjson");
+                    mgr::delete(&conf_name);
+                    deleted = true;
+                    overlay.toasts.info(overlay.lang.config_deleted());
+                }
+                ui.add_space(10f32);
+                ui.label(c);
+            });
         }
         ui.horizontal(|ui| {
             ui.add_space(250f32);
@@ -119,71 +154,76 @@ fn draw_main(overlay: &mut Overlay, ctx: &Context, _ui: &mut Ui) {
             // ui.separator();
             ui.label("Language");
             egui::ComboBox::from_id_salt("lang_selector")
-                        .selected_text(format!("{:?}", overlay.lang))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut overlay.lang,
-                                Lang::RU,
-                                "Русский",
-                            );
-                            ui.selectable_value(
-                                &mut overlay.lang,
-                                Lang::EN,
-                                "English",
-                            );
-                            if ui.selectable_value(
-                                &mut overlay.lang,
-                                Lang::ZhCn,
-                                "Chinese",
-                            ).clicked() {
-                                if !overlay.font_loaded {
-                                    load_font(ctx);
-                                    overlay.font_loaded = true;
-                                }
-                            };
-                            if ui.selectable_value(
-                                &mut overlay.lang,
-                                Lang::ZhTw,
-                                "Chinese (Taiwan)",
-                            ).clicked() {
-                                if !overlay.font_loaded {
-                                    load_font(ctx);
-                                    overlay.font_loaded = true;
-                                }
-                            };
-                        });
+                .selected_text(format!("{:?}", overlay.lang))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut overlay.lang, Lang::RU, "Русский");
+                    ui.selectable_value(&mut overlay.lang, Lang::EN, "English");
+                    if ui
+                        .selectable_value(&mut overlay.lang, Lang::ZhCn, "Chinese")
+                        .clicked()
+                        && !overlay.font_loaded
+                    {
+                        load_font(ctx);
+                        overlay.font_loaded = true;
+                    };
+                    if ui
+                        .selectable_value(&mut overlay.lang, Lang::ZhTw, "Chinese (Taiwan)")
+                        .clicked()
+                        && !overlay.font_loaded
+                    {
+                        load_font(ctx);
+                        overlay.font_loaded = true;
+                    };
+                });
 
             // ui.separator();
             draw_config(overlay, ui);
-            ui.hyperlink_to(overlay.lang.repository(), "https://github.com/Loara228/deadlock-esp");
+            ui.hyperlink_to(
+                overlay.lang.repository(),
+                "https://github.com/Loara228/deadlock-esp",
+            );
         });
 }
 
 fn draw_aim(overlay: &mut Overlay, ctx: &Context, _ui: &mut Ui) {
-    egui::Window::new("Aim")
-        .resizable(false).show(ctx, |ui| {
-            if overlay.settings.aim.angle_per_pixel == 0f32
-            {
-                ui.label(egui::RichText::new(overlay.lang.aim_not_calibrated()).color(egui::Color32::RED));
-            }
-            if ui.button(overlay.lang.aim_calibrate()).clicked() {
-                unsafe { SetForegroundWindow(overlay.game_hwnd).unwrap(); }
-                overlay.settings.aim.angle_per_pixel = aim::aiming::calibrate(&mut overlay.game);
-                if overlay.settings.aim.angle_per_pixel.is_nan()
-                {
-                    overlay.settings.aim.angle_per_pixel = 0f32;
-                }
-                unsafe { SetForegroundWindow(overlay.overlay_hwnd).unwrap(); }
-            }
-
-            ui.collapsing(overlay.lang.aim_players(), |ui| {
-                aim_element(ui, &mut overlay.settings.aim, false, &overlay.lang, &mut overlay.toasts);
-            });
-            ui.collapsing(overlay.lang.aim_creeps(), |ui| {
-                aim_element(ui, &mut overlay.settings.aim, true, &overlay.lang, &mut overlay.toasts);
-            });
+    egui::Window::new("Aim").resizable(false).show(ctx, |ui| {
+        if overlay.settings.aim.angle_per_pixel == 0f32 {
+            ui.label(
+                egui::RichText::new(overlay.lang.aim_not_calibrated()).color(egui::Color32::RED),
+            );
         }
-    );
+        if ui.button(overlay.lang.aim_calibrate()).clicked() {
+            unsafe {
+                SetForegroundWindow(overlay.game_hwnd).unwrap();
+            }
+            overlay.settings.aim.angle_per_pixel = aim::aiming::calibrate(&mut overlay.game);
+            if overlay.settings.aim.angle_per_pixel.is_nan() {
+                overlay.settings.aim.angle_per_pixel = 0f32;
+            }
+            unsafe {
+                SetForegroundWindow(overlay.overlay_hwnd).unwrap();
+            }
+        }
+
+        ui.collapsing(overlay.lang.aim_players(), |ui| {
+            aim_element(
+                ui,
+                &mut overlay.settings.aim,
+                false,
+                &overlay.lang,
+                &mut overlay.toasts,
+            );
+        });
+        ui.collapsing(overlay.lang.aim_creeps(), |ui| {
+            aim_element(
+                ui,
+                &mut overlay.settings.aim,
+                true,
+                &overlay.lang,
+                &mut overlay.toasts,
+            );
+        });
+    });
 }
 
 fn draw_esp(overlay: &mut Overlay, ctx: &Context, _ui: &mut Ui) {
@@ -206,15 +246,22 @@ fn load_font(ctx: &Context) {
     let mut file = std::fs::File::open(fonts_path.clone()).unwrap();
     let mut font_data = Vec::new();
     file.read_to_end(&mut font_data).unwrap();
-    
-    let font_data: &'static [u8] = Box::leak(font_data.into_boxed_slice()); 
-    fonts.font_data.insert(
-        "my_font".to_owned(),
-        FontData::from_static(font_data),
-    );
 
-    fonts.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "my_font".to_owned());
-    fonts.families.entry(egui::FontFamily::Monospace).or_default().push("my_font".to_owned());
+    let font_data: &'static [u8] = Box::leak(font_data.into_boxed_slice());
+    fonts
+        .font_data
+        .insert("my_font".to_owned(), FontData::from_static(font_data));
+
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "my_font".to_owned());
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("my_font".to_owned());
 
     ctx.set_fonts(fonts);
     log::info!("Font loaded: {:?}", fonts_path);
@@ -231,54 +278,86 @@ fn system_font_dir() -> Option<PathBuf> {
     })
 }
 
-pub fn aim_element(ui: &mut Ui, global_aim_settings: &mut AimSettings, entities: bool, lang: &Lang, toasts: &mut Toasts)
-{
+pub fn aim_element(
+    ui: &mut Ui,
+    global_aim_settings: &mut AimSettings,
+    entities: bool,
+    lang: &Lang,
+    toasts: &mut Toasts,
+) {
     let settings: &mut AimProperties = match entities {
         true => &mut global_aim_settings.creeps,
         false => &mut global_aim_settings.players,
     };
     if !entities {
         egui::ComboBox::from_id_salt("aim_bone")
-                        .selected_text(format!("{} {:?}", lang.bone(), global_aim_settings.aim_bone))
-                        .show_ui(ui, |ui| {
-                            if ui.selectable_value(
-                                &mut global_aim_settings.aim_bone,
-                                TargetBone::Head,
-                                lang.bone_head(),
-                            ).changed() {
-                                toasts.error("If hit only in the head. You can be turned into a frog and banned!");
-                                toasts.error("If hit only in the head. You can be turned into a frog and banned!");
-                                toasts.error("If hit only in the head. You can be turned into a frog and banned!");
-                            }
-                            if ui.selectable_value(
-                                &mut global_aim_settings.aim_bone,
-                                TargetBone::Neck,
-                                lang.bone_neck(),
-                            ).changed() {
-                                toasts.warning("There is a very small chance of a ban. (1%)");
-                            }
-                            ui.selectable_value(
-                                &mut global_aim_settings.aim_bone,
-                                TargetBone::Chest,
-                                lang.bone_chest(),
-                            );
-                            ui.selectable_value(
-                                &mut global_aim_settings.aim_bone,
-                                TargetBone::Pelvis,
-                                lang.bone_pelvis(),
-                            );
-                        });
+            .selected_text(format!(
+                "{} {:?}",
+                lang.bone(),
+                global_aim_settings.aim_bone
+            ))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(
+                        &mut global_aim_settings.aim_bone,
+                        TargetBone::Head,
+                        lang.bone_head(),
+                    )
+                    .changed()
+                {
+                    toasts.error(
+                        "If hit only in the head. You can be turned into a frog and banned!",
+                    );
+                    toasts.error(
+                        "If hit only in the head. You can be turned into a frog and banned!",
+                    );
+                    toasts.error(
+                        "If hit only in the head. You can be turned into a frog and banned!",
+                    );
+                }
+                if ui
+                    .selectable_value(
+                        &mut global_aim_settings.aim_bone,
+                        TargetBone::Neck,
+                        lang.bone_neck(),
+                    )
+                    .changed()
+                {
+                    toasts.warning("There is a very small chance of a ban. (1%)");
+                }
+                ui.selectable_value(
+                    &mut global_aim_settings.aim_bone,
+                    TargetBone::Chest,
+                    lang.bone_chest(),
+                );
+                ui.selectable_value(
+                    &mut global_aim_settings.aim_bone,
+                    TargetBone::Pelvis,
+                    lang.bone_pelvis(),
+                );
+            });
     } else {
         ui.horizontal(|ui| {
-            ui.radio_value(&mut global_aim_settings.priority, Priority::Souls, lang.souls());
-            ui.radio_value(&mut global_aim_settings.priority, Priority::Creeps, lang.creeps());
+            ui.radio_value(
+                &mut global_aim_settings.priority,
+                Priority::Souls,
+                lang.souls(),
+            );
+            ui.radio_value(
+                &mut global_aim_settings.priority,
+                Priority::Creeps,
+                lang.creeps(),
+            );
         });
     }
 
     btn_read_key(ui, &mut settings.key, lang);
 
     ui.checkbox(&mut settings.enable, lang.aim_enable());
-    ui.checkbox(&mut settings.velocity_prediction, lang.aim_velocity_prediction());
+    ui.checkbox(
+        &mut settings.velocity_prediction,
+        lang.aim_velocity_prediction(),
+    );
     ui.checkbox(&mut settings.rcs, lang.aim_rcs());
     ui.checkbox(&mut settings.targeting, lang.aim_targeting());
     ui.horizontal(|ui| {
@@ -286,32 +365,43 @@ pub fn aim_element(ui: &mut Ui, global_aim_settings: &mut AimSettings, entities:
         ui.label(lang.aim_fov_color());
     });
     if entities {
-        ui.horizontal(|ui|
-            {
-                ui.color_edit_button_srgba(&mut global_aim_settings.soul_color);
-                ui.label(lang.color());
-            });}
+        ui.horizontal(|ui| {
+            ui.color_edit_button_srgba(&mut global_aim_settings.soul_color);
+            ui.label(lang.color());
+        });
+    }
     ui.add(
-        egui::Slider::new(&mut settings.fov, 20.0..=800.0).show_value(true).text(lang.aim_fov())
+        egui::Slider::new(&mut settings.fov, 20.0..=800.0)
+            .show_value(true)
+            .text(lang.aim_fov()),
     );
     ui.add(
-        egui::Slider::new(&mut settings.smooth, 1.1..=10.0).show_value(true).text(lang.aim_smooth())
+        egui::Slider::new(&mut settings.smooth, 1.1..=10.0)
+            .show_value(true)
+            .text(lang.aim_smooth()),
     );
     ui.add(
-        egui::Slider::new(&mut settings.velocity_div_dav, 1f32..=30.0).show_value(true).text(lang.aim_velocity_prediction())
+        egui::Slider::new(&mut settings.velocity_div_dav, 1f32..=30.0)
+            .show_value(true)
+            .text(lang.aim_velocity_prediction()),
     );
     ui.horizontal(|ui| {
         ui.add(
-            egui::Slider::new(&mut settings.range, 200.0..=5000.0).show_value(true).text(lang.aim_max_distance())
+            egui::Slider::new(&mut settings.range, 200.0..=5000.0)
+                .show_value(true)
+                .text(lang.aim_max_distance()),
         );
-        ui.label(format!("{} ({})", (settings.range * 0.0254f32).round(), lang.aim_meters()))
+        ui.label(format!(
+            "{} ({})",
+            (settings.range * 0.0254f32).round(),
+            lang.aim_meters()
+        ))
     });
 }
 
 fn btn_read_key(ui: &mut Ui, key_bind: &mut Key, lang: &Lang) {
     ui.horizontal(|ui| {
-        if ui.button(lang.select_key()).clicked()
-        {
+        if ui.button(lang.select_key()).clicked() {
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(25));
                 unsafe {
@@ -336,23 +426,36 @@ mod esp {
     };
     use egui::{Align2, Ui};
 
-
     pub fn esp_text(ui: &mut Ui, overlay: &mut Overlay) {
         ui.collapsing(overlay.lang.esp_text(), |ui| {
             ui.collapsing(overlay.lang.esp_text_hero_name(), |ui| {
-                ui_text(ui, &mut overlay.settings.esp_players.text_hero, "ui_text_1", &overlay.lang);
+                ui_text(
+                    ui,
+                    &mut overlay.settings.esp_players.text_hero,
+                    "ui_text_1",
+                    &overlay.lang,
+                );
             });
             ui.collapsing(overlay.lang.esp_text_health(), |ui| {
-                ui_text(ui, &mut overlay.settings.esp_players.text_health, "ui_text_2", &overlay.lang);
+                ui_text(
+                    ui,
+                    &mut overlay.settings.esp_players.text_health,
+                    "ui_text_2",
+                    &overlay.lang,
+                );
             });
             ui.collapsing(overlay.lang.esp_text_distance(), |ui| {
-                ui_text(ui, &mut overlay.settings.esp_players.text_distance, "ui_text_3", &overlay.lang);
+                ui_text(
+                    ui,
+                    &mut overlay.settings.esp_players.text_distance,
+                    "ui_text_3",
+                    &overlay.lang,
+                );
             });
         });
     }
-    
-    pub fn esp_radar(ui: &mut Ui, overlay: &mut Overlay)
-    {
+
+    pub fn esp_radar(ui: &mut Ui, overlay: &mut Overlay) {
         ui.collapsing(overlay.lang.esp_radar(), |ui| {
             egui::Grid::new("radar_grid")
                 .num_columns(2)
@@ -363,23 +466,35 @@ mod esp {
                     ui.label(overlay.lang.enable());
                     ui.end_row();
 
-                    if ui.add(egui::RadioButton::new(overlay.settings.radar.icons == false, "Стрелки")).clicked() {
+                    if ui
+                        .add(egui::RadioButton::new(
+                            !overlay.settings.radar.icons,
+                            "Стрелки",
+                        ))
+                        .clicked()
+                    {
                         overlay.settings.radar.icons = false;
                     }
-                    if ui.add(egui::RadioButton::new(overlay.settings.radar.icons == true, "Иконки")).clicked() {
+                    if ui
+                        .add(egui::RadioButton::new(
+                            overlay.settings.radar.icons,
+                            "Иконки",
+                        ))
+                        .clicked()
+                    {
                         overlay.settings.radar.icons = true;
                     }
                     ui.end_row();
 
                     ui.add(
                         egui::Slider::new(&mut overlay.settings.radar.player_radius, 1.0..=8.0)
-                            .show_value(true)
+                            .show_value(true),
                     );
                     ui.label(overlay.lang.esp_radar_radius());
                     ui.end_row();
                     ui.add(
                         egui::Slider::new(&mut overlay.settings.radar.scale, 10.0..=50.0)
-                            .show_value(true)
+                            .show_value(true),
                     );
                     ui.label(overlay.lang.esp_radar_scale());
                     ui.end_row();
@@ -392,7 +507,6 @@ mod esp {
                     ui.color_edit_button_srgba(&mut overlay.settings.radar.color_team);
                     ui.label(overlay.lang.esp_radar_color_teammate());
                     ui.end_row();
-                    
 
                     ui.color_edit_button_srgba(&mut overlay.settings.radar.color_background);
                     ui.label(overlay.lang.esp_radar_color_bg());
@@ -402,11 +516,11 @@ mod esp {
                     ui.color_edit_button_srgba(&mut overlay.settings.radar.color_border);
                     ui.label(overlay.lang.esp_radar_color_stroke());
                     ui.end_row();
-                    
+
                     // icons
                     ui.add(
                         egui::Slider::new(&mut overlay.settings.radar.icon_size, 10.0..=40.0)
-                            .show_value(true)
+                            .show_value(true),
                     );
                     ui.label(overlay.lang.esp_radar_icon_size());
                     ui.end_row();
@@ -446,7 +560,10 @@ mod esp {
                     ui.label(lang.esp_players_rect_type());
                     ui.end_row();
 
-                    ui.checkbox(&mut overlay.settings.esp_players.outline_rect, lang.enable());
+                    ui.checkbox(
+                        &mut overlay.settings.esp_players.outline_rect,
+                        lang.enable(),
+                    );
                     ui.label(lang.esp_players_rect_stroke());
                     ui.end_row();
 
@@ -462,28 +579,28 @@ mod esp {
                     ui.label(lang.esp_players_rect_head());
                     ui.end_row();
                 });
-                
+
             ui.add(
                 egui::Slider::new(&mut overlay.settings.esp_players.stroke_width, 1.0..=4.0)
                     .show_value(true)
                     .text(lang.esp_players_rect_stroke_value()),
             );
             ui.end_row();
-            
+
             ui.add(
                 egui::Slider::new(&mut overlay.settings.esp_players.shadow_size, 1.0..=30.0)
                     .show_value(true)
                     .text(lang.esp_players_rect_shadow_value()),
             );
             ui.end_row();
-            
+
             ui.add(
                 egui::Slider::new(&mut overlay.settings.esp_players.shadow_blur, 1.0..=15.)
                     .show_value(true)
                     .text(lang.esp_players_rect_shadow_blur_value()),
             );
             ui.end_row();
-            
+
             egui::Grid::new("esp_grid 2")
                 .num_columns(2)
                 .min_col_width(150.)
@@ -521,47 +638,50 @@ mod esp {
         let lang = &overlay.lang;
         ui.collapsing(lang.esp_offscreen(), |ui| {
             egui::Grid::new("offscreen_grid")
-            .num_columns(2)
-            .min_col_width(150.)
-            .max_col_width(150.)
-            .show(ui, |ui| {
-                ui.checkbox(&mut overlay.settings.offscreen.enable, lang.enable());
-                ui.end_row();
-                
-                ui.add(
-                    egui::Slider::new(&mut overlay.settings.offscreen.radius, 50f32..=500f32)
-                        .show_value(true)
-                );
-                ui.label(lang.radius());
-                ui.end_row();
+                .num_columns(2)
+                .min_col_width(150.)
+                .max_col_width(150.)
+                .show(ui, |ui| {
+                    ui.checkbox(&mut overlay.settings.offscreen.enable, lang.enable());
+                    ui.end_row();
 
-                ui.checkbox(&mut overlay.settings.offscreen.enable_rect, lang.enable());
-                ui.label(lang.esp_players_rect());
-                ui.end_row();
+                    ui.add(
+                        egui::Slider::new(&mut overlay.settings.offscreen.radius, 50f32..=500f32)
+                            .show_value(true),
+                    );
+                    ui.label(lang.radius());
+                    ui.end_row();
 
-                ui.color_edit_button_srgba(&mut overlay.settings.offscreen.rect_color);
-                ui.label(lang.color());
-                ui.end_row();
+                    ui.checkbox(&mut overlay.settings.offscreen.enable_rect, lang.enable());
+                    ui.label(lang.esp_players_rect());
+                    ui.end_row();
 
-                ui.checkbox(&mut overlay.settings.offscreen.enable_icon, lang.enable());
-                ui.label(lang.icon());
-                ui.end_row();
+                    ui.color_edit_button_srgba(&mut overlay.settings.offscreen.rect_color);
+                    ui.label(lang.color());
+                    ui.end_row();
 
-                ui.add(
-                    egui::Slider::new(&mut overlay.settings.offscreen.icon_size, 15f32..=50f32)
-                        .show_value(true)
-                );
-                ui.label(lang.esp_radar_icon_size());
-                ui.end_row();
+                    ui.checkbox(&mut overlay.settings.offscreen.enable_icon, lang.enable());
+                    ui.label(lang.icon());
+                    ui.end_row();
 
-                ui.checkbox(&mut overlay.settings.offscreen.enable_health, lang.enable());
-                ui.label(lang.esp_healthbar());
-                ui.end_row();
+                    ui.add(
+                        egui::Slider::new(&mut overlay.settings.offscreen.icon_size, 15f32..=50f32)
+                            .show_value(true),
+                    );
+                    ui.label(lang.esp_radar_icon_size());
+                    ui.end_row();
 
-                ui.checkbox(&mut overlay.settings.offscreen.enable_distance, lang.enable());
-                ui.label(lang.esp_text_distance());
-                ui.end_row();
-            });
+                    ui.checkbox(&mut overlay.settings.offscreen.enable_health, lang.enable());
+                    ui.label(lang.esp_healthbar());
+                    ui.end_row();
+
+                    ui.checkbox(
+                        &mut overlay.settings.offscreen.enable_distance,
+                        lang.enable(),
+                    );
+                    ui.label(lang.esp_text_distance());
+                    ui.end_row();
+                });
         });
     }
 
@@ -570,20 +690,20 @@ mod esp {
         ui.collapsing(lang.esp_healthbar(), |ui| {
             ui.checkbox(&mut overlay.settings.healthbars.enable, lang.enable());
             egui::Grid::new("healthbars_grid")
-            .num_columns(2)
-            .min_col_width(150.)
-            .max_col_width(150.)
-            .show(ui, |ui| {
-                ui.color_edit_button_srgba(&mut overlay.settings.healthbars.background_color);
-                ui.label(lang.esp_healthbar_bg());
-                ui.end_row();
-                ui.color_edit_button_srgba(&mut overlay.settings.healthbars.hp_color);
-                ui.label(lang.esp_healthbar_value());
-                ui.end_row();
-                ui.color_edit_button_srgba(&mut overlay.settings.healthbars.outline_color);
-                ui.label(lang.esp_healthbar_stroke());
-                ui.end_row();
-            });
+                .num_columns(2)
+                .min_col_width(150.)
+                .max_col_width(150.)
+                .show(ui, |ui| {
+                    ui.color_edit_button_srgba(&mut overlay.settings.healthbars.background_color);
+                    ui.label(lang.esp_healthbar_bg());
+                    ui.end_row();
+                    ui.color_edit_button_srgba(&mut overlay.settings.healthbars.hp_color);
+                    ui.label(lang.esp_healthbar_value());
+                    ui.end_row();
+                    ui.color_edit_button_srgba(&mut overlay.settings.healthbars.outline_color);
+                    ui.label(lang.esp_healthbar_stroke());
+                    ui.end_row();
+                });
         });
     }
 
@@ -614,16 +734,16 @@ mod esp {
         );
 
         egui::ComboBox::from_id_salt(id)
-            .selected_text(format!("{}", to_string(settings.align, lang)))
+            .selected_text(to_string(settings.align, lang).to_string())
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut settings.align, Align2::CENTER_TOP, lang.align_top());
                 ui.selectable_value(&mut settings.align, Align2::LEFT_TOP, lang.align_left());
+                ui.selectable_value(&mut settings.align, Align2::RIGHT_TOP, lang.align_right());
                 ui.selectable_value(
                     &mut settings.align,
-                    Align2::RIGHT_TOP,
-                    lang.align_right(),
+                    Align2::CENTER_BOTTOM,
+                    lang.align_bottom(),
                 );
-                ui.selectable_value(&mut settings.align, Align2::CENTER_BOTTOM, lang.align_bottom());
             });
     }
 }

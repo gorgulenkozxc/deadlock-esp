@@ -1,22 +1,20 @@
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod drawing;
+pub mod external;
 mod input;
 mod memory;
 pub mod settings;
-pub mod external;
 
 use std::env;
 
 use clap::*;
 use settings::mgr;
 
-pub mod connection
-{
+pub mod connection {
     use std::{net::UdpSocket, time::Instant};
 
-    pub fn run_server()
-    {
+    pub fn run_server() {
         let socket = UdpSocket::bind("127.0.0.1:228").unwrap();
         let mut buf = [0; 8];
         let mut timer = Instant::now();
@@ -25,13 +23,11 @@ pub mod connection
             let mut i = 0;
             let mut x_buf: [u8; 4] = [0u8; 4];
             let mut y_buf: [u8; 4] = [0u8; 4];
-            for _ in 0..4
-            {
+            for _ in 0..4 {
                 x_buf[i] = buf[i];
                 i += 1;
             }
-            for _ in 4..8
-            {
+            for _ in 4..8 {
                 y_buf[i - 4] = buf[i];
                 i += 1;
             }
@@ -45,22 +41,20 @@ pub mod connection
         }
     }
 
-    pub fn send_move(socket: &UdpSocket, x: i32, y: i32)
-    {
+    pub fn send_move(socket: &UdpSocket, x: i32, y: i32) {
         let mut arr: [u8; 8] = [0u8; 8];
         let mut i = 0;
         for byte in x.to_ne_bytes().iter() {
-            arr[i] = byte.clone();
+            arr[i] = *byte;
             i += 1;
         }
         for byte in y.to_ne_bytes().iter() {
-            arr[i] = byte.clone();
+            arr[i] = *byte;
             i += 1;
         }
         socket.send_to(&arr, "127.0.0.1:228").unwrap(); // отправляет в программу
     }
 }
-
 
 #[derive(Parser)]
 #[command(version)]
@@ -72,7 +66,7 @@ struct Cli {
 
     #[arg(short, long, value_enum)]
     #[arg(default_value = "3")]
-    logs: usize
+    logs: usize,
 }
 
 impl Cli {
@@ -105,13 +99,12 @@ fn main() {
     drawing::overlay::run(args.old_window);
 }
 
-fn check_processes()
-{
+fn check_processes() {
     let cur_pid = std::process::id();
 
     let mut system = sysinfo::System::new();
     system.refresh_processes(sysinfo::ProcessesToUpdate::All);
-    
+
     let mut i = 0;
     let cur_proc = module_path!();
     for p in system.processes_by_name(cur_proc.as_ref()) {
@@ -132,7 +125,7 @@ fn exit() {
     let cur_pid = std::process::id();
     let mut system = sysinfo::System::new();
     system.refresh_processes(sysinfo::ProcessesToUpdate::All);
-    
+
     let cur_proc = module_path!();
     for p in system.processes_by_name(cur_proc.as_ref()) {
         let pid = p.pid().as_u32();
@@ -143,25 +136,26 @@ fn exit() {
     std::process::exit(0);
 }
 
-fn run_mouse_proc()
-{
+fn run_mouse_proc() {
     _ = std::thread::spawn(|| {
-        std::process::Command::new(get_current_file_name()).arg("-m").spawn().unwrap();
+        let _ = std::process::Command::new(get_current_file_name())
+            .arg("-m")
+            .spawn()
+            .unwrap()
+            .wait();
     });
     std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
-fn parse_arguments() -> Cli
-{
+fn parse_arguments() -> Cli {
     let args = Cli::parse();
     env_logger::builder()
-        .filter_module(module_path!(), log::LevelFilter::from(args.get_filter()))
+        .filter_module(module_path!(), args.get_filter())
         .init();
     args
 }
 
-fn get_current_file_name() -> String
-{   
+fn get_current_file_name() -> String {
     let exe_path = env::current_exe().unwrap();
     exe_path.file_name().unwrap().to_str().unwrap().to_owned()
 }

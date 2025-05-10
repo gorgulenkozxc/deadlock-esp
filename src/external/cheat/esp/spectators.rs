@@ -1,7 +1,15 @@
-use crate::{drawing::localization::Lang, external::interfaces::structs::Observers, settings::structs::Settings};
+use crate::{
+    drawing::localization::Lang, external::interfaces::structs::Observers,
+    settings::structs::Settings,
+};
 
-pub fn draw_window(observers: &Observers, ctx: &egui::Context, settings: &mut Settings, lang: &Lang, ui_enabled: bool)
-{   
+pub fn draw_window(
+    observers: &Observers,
+    ctx: &egui::Context,
+    settings: &mut Settings,
+    lang: &Lang,
+    ui_enabled: bool,
+) {
     let window = egui::Window::new("Spectators");
     window
         .resizable(true)
@@ -18,5 +26,5 @@ pub fn draw_window(observers: &Observers, ctx: &egui::Context, settings: &mut Se
             for p_name in observers.spectator_list.iter() {
                 ui.label(p_name);
             }
-    });
+        });
 }

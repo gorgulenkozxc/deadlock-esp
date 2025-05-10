@@ -1,180 +1,182 @@
 #![allow(non_upper_case_globals, non_camel_case_types, non_snake_case, unused)]
 
 use serde::{Deserialize, Serialize};
-use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, VIRTUAL_KEY};
+use windows::Win32::UI::Input::KeyboardAndMouse::{
+    GetAsyncKeyState, SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
+    VIRTUAL_KEY,
+};
 
-#[derive(Clone, Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum VirtualKeys {
-	LBUTTON = 1,
-	RBUTTON,
-	CANCEL,
-	MBUTTON,
-	XBUTTON1,
-	XBUTTON2,
-	BACK = 8,
-	TAB,
-	CLEAR = 12,
-	RETURN,
-	SHIFT = 16,
-	CONTROL,
-	MENU,
-	PAUSE,
-	CAPITAL,
-	HANGUL = 21,
-	JUNJA = 23,
-	FINAL,
-	ESCAPE = 27,
-	CONVERT,
-	NONCONVERT,
-	ACCEPT,
-	MODECHANGE,
-	SPACE,
-	PRIOR,
-	NEXT,
-	END,
-	HOME,
-	LEFT,
-	UP,
-	RIGHT,
-	DOWN,
-	SELECT,
-	PRINT,
-	EXECUTE,
-	SNAPSHOT,
-	INSERT,
-	DELETE,
-	HELP,
-	KEY_0,
-	KEY_1,
-	KEY_2,
-	KEY_3,
-	KEY_4,
-	KEY_5,
-	KEY_6,
-	KEY_7,
-	KEY_8,
-	KEY_9,
-	KEY_A = 65,
-	KEY_B,
-	KEY_C,
-	KEY_D,
-	KEY_E,
-	KEY_F,
-	KEY_G,
-	KEY_H,
-	KEY_I,
-	KEY_J,
-	KEY_K,
-	KEY_L,
-	KEY_M,
-	KEY_N,
-	KEY_O,
-	KEY_P,
-	KEY_Q,
-	KEY_R,
-	KEY_S,
-	KEY_T,
-	KEY_U,
-	KEY_V,
-	KEY_W,
-	KEY_X,
-	KEY_Y,
-	KEY_Z,
-	LWIN,
-	RWIN,
-	APPS,
-	SLEEP = 95,
-	NUMPAD0,
-	NUMPAD1,
-	NUMPAD2,
-	NUMPAD3,
-	NUMPAD4,
-	NUMPAD5,
-	NUMPAD6,
-	NUMPAD7,
-	NUMPAD8,
-	NUMPAD9,
-	MULTIPLY,
-	ADD,
-	SEPARATOR,
-	SUBTRACT,
-	DECIMAL,
-	DIVIDE,
-	F1,
-	F2,
-	F3,
-	F4,
-	F5,
-	F6,
-	F7,
-	F8,
-	F9,
-	F10,
-	F11,
-	F12,
-	F13,
-	F14,
-	F15,
-	F16,
-	F17,
-	F18,
-	F19,
-	F20,
-	F21,
-	F22,
-	F23,
-	F24,
-	NUMLOCK = 144,
-	SCROLL,
-	LSHIFT = 160,
-	RSHIFT,
-	LCONTROL,
-	RCONTROL,
-	LMENU,
-	RMENU,
-	BROWSER_BACK,
-	BROWSER_FORWARD,
-	BROWSER_REFRESH,
-	BROWSER_STOP,
-	BROWSER_SEARCH,
-	BROWSER_FAVORITES,
-	BROWSER_HOME,
-	VOLUME_MUTE,
-	VOLUME_DOWN,
-	VOLUME_UP,
-	MEDIA_NEXT_TRACK,
-	MEDIA_PREV_TRACK,
-	MEDIA_STOP,
-	MEDIA_PLAY_PAUSE,
-	LAUNCH_MAIL,
-	LAUNCH_MEDIA_SELECT,
-	LAUNCH_APP1,
-	LAUNCH_APP2,
-	OEM_1 = 186,
-	OEM_PLUS,
-	OEM_COMMA,
-	OEM_MINUS,
-	OEM_PERIOD,
-	OEM_2,
-	OEM_3,
-	OEM_4 = 219,
-	OEM_5,
-	OEM_6,
-	OEM_7,
-	OEM_8,
-	OEM_102 = 226,
-	PROCESSKEY = 229,
-	PACKET = 231,
-	ATTN = 246,
-	CRSEL,
-	EXSEL,
-	EREOF,
-	PLAY,
-	ZOOM,
-	NONAME,
-	PA1,
-	OEM_CLEAR
+    LBUTTON = 1,
+    RBUTTON,
+    CANCEL,
+    MBUTTON,
+    XBUTTON1,
+    XBUTTON2,
+    BACK = 8,
+    TAB,
+    CLEAR = 12,
+    RETURN,
+    SHIFT = 16,
+    CONTROL,
+    MENU,
+    PAUSE,
+    CAPITAL,
+    HANGUL = 21,
+    JUNJA = 23,
+    FINAL,
+    ESCAPE = 27,
+    CONVERT,
+    NONCONVERT,
+    ACCEPT,
+    MODECHANGE,
+    SPACE,
+    PRIOR,
+    NEXT,
+    END,
+    HOME,
+    LEFT,
+    UP,
+    RIGHT,
+    DOWN,
+    SELECT,
+    PRINT,
+    EXECUTE,
+    SNAPSHOT,
+    INSERT,
+    DELETE,
+    HELP,
+    KEY_0,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_A = 65,
+    KEY_B,
+    KEY_C,
+    KEY_D,
+    KEY_E,
+    KEY_F,
+    KEY_G,
+    KEY_H,
+    KEY_I,
+    KEY_J,
+    KEY_K,
+    KEY_L,
+    KEY_M,
+    KEY_N,
+    KEY_O,
+    KEY_P,
+    KEY_Q,
+    KEY_R,
+    KEY_S,
+    KEY_T,
+    KEY_U,
+    KEY_V,
+    KEY_W,
+    KEY_X,
+    KEY_Y,
+    KEY_Z,
+    LWIN,
+    RWIN,
+    APPS,
+    SLEEP = 95,
+    NUMPAD0,
+    NUMPAD1,
+    NUMPAD2,
+    NUMPAD3,
+    NUMPAD4,
+    NUMPAD5,
+    NUMPAD6,
+    NUMPAD7,
+    NUMPAD8,
+    NUMPAD9,
+    MULTIPLY,
+    ADD,
+    SEPARATOR,
+    SUBTRACT,
+    DECIMAL,
+    DIVIDE,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
+    NUMLOCK = 144,
+    SCROLL,
+    LSHIFT = 160,
+    RSHIFT,
+    LCONTROL,
+    RCONTROL,
+    LMENU,
+    RMENU,
+    BROWSER_BACK,
+    BROWSER_FORWARD,
+    BROWSER_REFRESH,
+    BROWSER_STOP,
+    BROWSER_SEARCH,
+    BROWSER_FAVORITES,
+    BROWSER_HOME,
+    VOLUME_MUTE,
+    VOLUME_DOWN,
+    VOLUME_UP,
+    MEDIA_NEXT_TRACK,
+    MEDIA_PREV_TRACK,
+    MEDIA_STOP,
+    MEDIA_PLAY_PAUSE,
+    LAUNCH_MAIL,
+    LAUNCH_MEDIA_SELECT,
+    LAUNCH_APP1,
+    LAUNCH_APP2,
+    OEM_1 = 186,
+    OEM_PLUS,
+    OEM_COMMA,
+    OEM_MINUS,
+    OEM_PERIOD,
+    OEM_2,
+    OEM_3,
+    OEM_4 = 219,
+    OEM_5,
+    OEM_6,
+    OEM_7,
+    OEM_8,
+    OEM_102 = 226,
+    PROCESSKEY = 229,
+    PACKET = 231,
+    ATTN = 246,
+    CRSEL,
+    EXSEL,
+    EREOF,
+    PLAY,
+    ZOOM,
+    NONAME,
+    PA1,
+    OEM_CLEAR,
 }
 
 impl VirtualKeys {
@@ -348,55 +350,43 @@ impl VirtualKeys {
             VirtualKeys::ZOOM,
             VirtualKeys::NONAME,
             VirtualKeys::PA1,
-            VirtualKeys::OEM_CLEAR]
+            VirtualKeys::OEM_CLEAR,
+        ]
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Clone, Copy)]
-#[derive(PartialEq)]
-#[derive(Debug)]
-pub enum KeyState
-{
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
+pub enum KeyState {
     None,
     Pressed,
     Down,
-    Released
+    Released,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone, Copy)]
-pub struct Key
-{
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct Key {
     pub state: KeyState,
-    pub code: i32
+    pub code: i32,
 }
 
-impl Key
-{
-    pub fn new(vk_code: i32) -> Self
-    {
+impl Key {
+    pub fn new(vk_code: i32) -> Self {
         Self {
             state: KeyState::None,
             code: vk_code,
         }
     }
 
-    pub fn update(&mut self)
-    {
+    pub fn update(&mut self) {
         unsafe {
             let down = GetAsyncKeyState(self.code) < 0;
-            if down
-            {
+            if down {
                 match self.state {
                     KeyState::None => self.state = KeyState::Pressed,
                     KeyState::Pressed => self.state = KeyState::Down,
-                    _ => ()
+                    _ => (),
                 }
-            }
-            else
-            {
+            } else {
                 match self.state {
                     KeyState::None => (),
                     KeyState::Pressed => self.state = KeyState::Released,
@@ -409,13 +399,17 @@ impl Key
 }
 
 pub fn send_key(vk_code: VirtualKeys) {
-    let mut input_down = INPUT::default();
-    input_down.r#type = INPUT_KEYBOARD;
+    let mut input_down = INPUT {
+        r#type: INPUT_KEYBOARD,
+        ..INPUT::default()
+    };
     input_down.Anonymous.ki.wVk = VIRTUAL_KEY(vk_code as u16);
     input_down.Anonymous.ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
-    
-    let mut input_up = INPUT::default();
-    input_up.r#type = INPUT_KEYBOARD;
+
+    let mut input_up = INPUT {
+        r#type: INPUT_KEYBOARD,
+        ..INPUT::default()
+    };
     input_up.Anonymous.ki.wVk = VIRTUAL_KEY(vk_code as u16);
     input_up.Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
 
@@ -425,15 +419,18 @@ pub fn send_key(vk_code: VirtualKeys) {
     }
 }
 
-
 pub fn send_key_thread(vk_code: VirtualKeys) {
-    let mut input_down = INPUT::default();
-    input_down.r#type = INPUT_KEYBOARD;
+    let mut input_down = INPUT {
+        r#type: INPUT_KEYBOARD,
+        ..INPUT::default()
+    };
     input_down.Anonymous.ki.wVk = VIRTUAL_KEY(vk_code as u16);
     input_down.Anonymous.ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
-    
-    let mut input_up = INPUT::default();
-    input_up.r#type = INPUT_KEYBOARD;
+
+    let mut input_up = INPUT {
+        r#type: INPUT_KEYBOARD,
+        ..INPUT::default()
+    };
     input_up.Anonymous.ki.wVk = VIRTUAL_KEY(vk_code as u16);
     input_up.Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
 
