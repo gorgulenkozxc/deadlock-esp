@@ -2,9 +2,9 @@ use crate::{
     external::interfaces::{entities::Player, math::Matrix},
     settings::{structs::BoxType, structs::Settings},
 };
-use egui::{epaint::RectShape, Pos2, Rect, Rounding, Stroke};
+use egui::{epaint::RectShape, CornerRadius, Pos2, Rect, Stroke};
 
-pub fn draw_boxes(rect: Rect, g: &egui::Painter, settings: &Settings) {
+pub fn draw_boxes(rect: Rect, painter: &egui::Painter, settings: &Settings) {
     let rounding = get_rounding(rect, settings);
 
     if settings.esp_players.shadow {
@@ -49,34 +49,34 @@ pub fn draw_boxes(rect: Rect, g: &egui::Painter, settings: &Settings) {
                 y: rect.min.y + size,
             },
         };
-        g.add(
+        painter.add(
             RectShape::filled(
                 r1,
-                egui::Rounding::default(),
+                egui::CornerRadius::default(),
                 settings.esp_players.shadow_color,
             )
             .with_blur_width(settings.esp_players.shadow_blur),
         );
-        g.add(
+        painter.add(
             RectShape::filled(
                 r2,
-                egui::Rounding::default(),
+                egui::CornerRadius::default(),
                 settings.esp_players.shadow_color,
             )
             .with_blur_width(settings.esp_players.shadow_blur),
         );
-        g.add(
+        painter.add(
             RectShape::filled(
                 r3,
-                egui::Rounding::default(),
+                egui::CornerRadius::default(),
                 settings.esp_players.shadow_color,
             )
             .with_blur_width(settings.esp_players.shadow_blur),
         );
-        g.add(
+        painter.add(
             RectShape::filled(
                 r4,
-                egui::Rounding::default(),
+                egui::CornerRadius::default(),
                 settings.esp_players.shadow_color,
             )
             .with_blur_width(settings.esp_players.shadow_blur),
@@ -84,7 +84,7 @@ pub fn draw_boxes(rect: Rect, g: &egui::Painter, settings: &Settings) {
     }
 
     if settings.esp_players.fill_rect {
-        g.rect_filled(rect, rounding, settings.esp_players.fill_color);
+        painter.rect_filled(rect, rounding, settings.esp_players.fill_color);
     }
 
     if settings.esp_players.outline_rect {
@@ -93,9 +93,9 @@ pub fn draw_boxes(rect: Rect, g: &egui::Painter, settings: &Settings) {
             settings.esp_players.outline_color,
         );
         if settings.esp_players.box_type == BoxType::Edges {
-            draw_edges(rect, g, stroke);
+            draw_edges(rect, painter, stroke);
         } else {
-            g.rect_stroke(rect, rounding, stroke);
+            painter.rect_stroke(rect, rounding, stroke, egui::StrokeKind::Middle);
         }
     }
 }
@@ -117,7 +117,7 @@ pub fn draw_head(g: &egui::Painter, player: &Player, settings: &Settings, matrix
         g.add(
             RectShape::filled(
                 rect,
-                egui::Rounding::same(l / 2.),
+                egui::CornerRadius::same((l / 2.).clamp(0.0, 255.0) as u8),
                 settings.esp_players.glow_color,
             )
             .with_blur_width(l / 1.2),
@@ -168,28 +168,28 @@ fn draw_edges(rect: Rect, g: &egui::Painter, stroke: Stroke) {
     g.line_segment([first, third], stroke);
 }
 
-fn get_rounding(rect: Rect, settings: &Settings) -> Rounding {
+fn get_rounding(rect: Rect, settings: &Settings) -> CornerRadius {
     match settings.esp_players.box_type {
-        crate::settings::structs::BoxType::Default => Rounding {
-            nw: 0.,
-            ne: 0.,
-            sw: 0.,
-            se: 0.,
+        crate::settings::structs::BoxType::Default => CornerRadius {
+            nw: 0,
+            ne: 0,
+            sw: 0,
+            se: 0,
         },
         crate::settings::structs::BoxType::Rounded => {
-            let r = rect.width() / 10.;
-            Rounding {
+            let r = (rect.width() / 10.).clamp(0.0, 255.0) as u8;
+            CornerRadius {
                 nw: r,
                 ne: r,
                 sw: r,
                 se: r,
             }
         }
-        crate::settings::structs::BoxType::Edges => Rounding {
-            nw: 0.,
-            ne: 0.,
-            sw: 0.,
-            se: 0.,
+        crate::settings::structs::BoxType::Edges => CornerRadius {
+            nw: 0,
+            ne: 0,
+            sw: 0,
+            se: 0,
         },
         // _ =>
         // {

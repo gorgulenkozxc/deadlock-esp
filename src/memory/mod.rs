@@ -1,5 +1,6 @@
 use core::{ffi::c_void, str};
 use std::thread;
+use std::time::Duration;
 use windows::Win32::{
     Foundation::{HANDLE, HMODULE},
     System::{
@@ -129,25 +130,33 @@ pub fn initialize() {
 }
 
 unsafe fn find_process() -> HANDLE {
-    let mut system = sysinfo::System::new();
-    system.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    let mut system = sysinfo::System::new_all();
+    system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
     let process = system.processes_by_name("deadlock.exe".as_ref()).next();
+
     match process {
         Some(proc) => {
+            let pid = proc.pid();
+
             thread::spawn(move || {
-                let mut system = sysinfo::System::new();
-                system.refresh_processes(sysinfo::ProcessesToUpdate::All);
-                let process = system.processes_by_name("deadlock.exe".as_ref()).next();
-                process.unwrap().wait();
-                log::info!("Game exited. Bye!");
-                crate::exit();
+                let mut monitor_system = sysinfo::System::new_all();
+                loop {
+                    monitor_system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+                    if monitor_system.process(pid).is_none() {
+                        log::info!("Game exited. Bye!");
+                        crate::exit();
+                    }
+                    thread::sleep(Duration::from_secs(1));
+                }
             });
+
             let handle = OpenProcess(
                 PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                 false,
-                proc.pid().as_u32(),
+                pid.as_u32(),
             )
             .unwrap();
+
             log::info!("Process found: {:?}", handle);
             handle
         }
@@ -172,7 +181,7 @@ unsafe fn find_module(module_name: &str) -> MODULEINFO {
 
         for i in 0..cb_needed as usize / std::mem::size_of::<HMODULE>() {
             let mut file_name: [u8; 32] = [0u8; 32];
-            GetModuleBaseNameA(PROCESS_HANDLE, h_mods[i], &mut file_name);
+            GetModuleBaseNameA(PROCESS_HANDLE, Some(h_mods[i]), &mut file_name);
             let file_name_str = str::from_utf8(&file_name).unwrap();
             if file_name_str.starts_with(module_name) {
                 let mut module_info = MODULEINFO::default();

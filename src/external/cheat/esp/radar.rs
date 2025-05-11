@@ -2,7 +2,7 @@ use crate::{
     external::{interfaces::entities::Player, External},
     settings::structs::RadarSettings,
 };
-use egui::{epaint::PathShape, pos2, Pos2, Rect, Rounding, Stroke};
+use egui::{epaint::PathShape, pos2, CornerRadius, Pos2, Rect, Stroke};
 
 pub fn draw_radar_window(settings: &mut RadarSettings, ctx: &egui::Context) {
     let window = egui::Window::new("Radar");
@@ -24,9 +24,9 @@ pub fn draw_radar(ui: &mut egui::Ui, settings: &RadarSettings, game: &External) 
     if game.local_player_index == 0 || !settings.enable {
         return;
     }
-    let mut rounding = egui::Rounding::same(8.);
-    rounding.nw = 0.;
-    rounding.ne = 0.;
+    let mut rounding = egui::CornerRadius::same(8);
+    rounding.nw = 0;
+    rounding.ne = 0;
     let stroke = egui::Stroke::new(2., settings.color_border);
     ui.painter()
         .rect_filled(settings.rect, rounding, settings.color_background);
@@ -35,7 +35,8 @@ pub fn draw_radar(ui: &mut egui::Ui, settings: &RadarSettings, game: &External) 
         .line_segment([settings.rect.center(), settings.rect.left_top()], stroke);
     ui.painter()
         .line_segment([settings.rect.center(), settings.rect.right_top()], stroke);
-    ui.painter().rect_stroke(settings.rect, rounding, stroke);
+    ui.painter()
+        .rect_stroke(settings.rect, rounding, stroke, egui::StrokeKind::Middle);
 
     for player in game.players.iter() {
         if player.is_alive() {
@@ -87,7 +88,9 @@ fn draw_player(
 
         ui.painter().circle_filled(radar_pos, num + 1f32, color);
         let image = egui::Image::new(player.data.hero.get_icon());
-        image.rounding(Rounding::same(num)).paint_at(ui, icon_rect);
+        image
+            .corner_radius(CornerRadius::same(num.clamp(0.0, 255.0) as u8))
+            .paint_at(ui, icon_rect);
     } else {
         let player_view_angle = ((player.game_scene_node.view_angle_y) * -1f32) + angle;
         draw_direction(

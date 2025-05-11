@@ -1,4 +1,4 @@
-use egui::{pos2, Align2, Color32, FontId, Painter, Pos2, Rect, Rounding, Stroke, Ui};
+use egui::{pos2, Align2, Color32, CornerRadius, FontId, Painter, Pos2, Rect, Stroke, Ui};
 
 use crate::{
     external::interfaces::{
@@ -77,8 +77,9 @@ fn draw_info(
     if settings.offscreen.enable_rect {
         g.rect_stroke(
             icon_rect,
-            Rounding::default(),
+            CornerRadius::default(),
             Stroke::new(2f32, settings.offscreen.rect_color),
+            egui::StrokeKind::Middle,
         );
     }
     if settings.offscreen.enable_health {
@@ -92,7 +93,7 @@ fn draw_healthbar(g: &Painter, player: &Player, icon_rect: Rect, settings: &Heal
         max: pos2(icon_rect.max.x, icon_rect.max.y + 4f32),
     };
 
-    let rounding = Rounding::default();
+    let rounding = CornerRadius::default();
 
     let hp_rect = Rect {
         min: rect_hp_max.min,
@@ -109,6 +110,7 @@ fn draw_healthbar(g: &Painter, player: &Player, icon_rect: Rect, settings: &Heal
         rect_hp_max,
         rounding,
         Stroke::new(1f32, settings.outline_color),
+        egui::StrokeKind::Middle,
     ); // stroke
 }
 

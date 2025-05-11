@@ -102,8 +102,8 @@ fn main() {
 fn check_processes() {
     let cur_pid = std::process::id();
 
-    let mut system = sysinfo::System::new();
-    system.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    let mut system = sysinfo::System::new_all();
+    system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
     let mut i = 0;
     let cur_proc = module_path!();
@@ -123,8 +123,8 @@ fn check_processes() {
 
 fn exit() {
     let cur_pid = std::process::id();
-    let mut system = sysinfo::System::new();
-    system.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    let mut system = sysinfo::System::new_all();
+    system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
     let cur_proc = module_path!();
     for p in system.processes_by_name(cur_proc.as_ref()) {

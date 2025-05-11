@@ -9,10 +9,10 @@ use windows::Win32::{
 pub fn detect() -> (Vec2, Vec2) {
     unsafe {
         if multi_monitor_support() {
-            let hdc = GetDC(HWND(std::ptr::null_mut()));
+            let hdc = GetDC(Some(HWND(std::ptr::null_mut())));
 
-            let width = GetDeviceCaps(hdc, HORZRES) as f32;
-            let height = GetDeviceCaps(hdc, VERTRES) as f32;
+            let width = GetDeviceCaps(Some(hdc), HORZRES) as f32;
+            let height = GetDeviceCaps(Some(hdc), VERTRES) as f32;
 
             let monitor_info = (
                 Vec2 { x: 0f32, y: 0f32 },

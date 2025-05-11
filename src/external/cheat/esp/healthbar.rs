@@ -1,5 +1,5 @@
 use crate::{external::interfaces::entities::Player, settings::structs::HealthbarSettings};
-use egui::{pos2, Pos2, Rounding, Stroke, Ui};
+use egui::{pos2, CornerRadius, Pos2, Stroke, Ui};
 use emath::Rect;
 
 pub fn draw(ui: &mut Ui, player: &Player, settings: &HealthbarSettings) {
@@ -8,7 +8,7 @@ pub fn draw(ui: &mut Ui, player: &Player, settings: &HealthbarSettings) {
         return;
     }
     let height: f32 = get_height(player.rect.width());
-    let rounding = Rounding::same(height / 2f32);
+    let rounding = CornerRadius::same((height / 2f32).clamp(0.0, 255.0) as u8);
     let hp_rect_max = get_hpbar_rect(player.rect, 1, 1);
     let hp_rect = get_hpbar_rect(player.rect, player.data.health, player.data.max_health);
     g.rect_filled(hp_rect_max, rounding, settings.background_color); // background
@@ -17,6 +17,7 @@ pub fn draw(ui: &mut Ui, player: &Player, settings: &HealthbarSettings) {
         hp_rect_max,
         rounding,
         Stroke::new(1f32, settings.outline_color),
+        egui::StrokeKind::Middle,
     ); // stroke
 
     let mut icon_size: f32 = height * 1.5f32;

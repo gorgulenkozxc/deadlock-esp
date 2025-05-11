@@ -160,7 +160,7 @@ impl Entity {
                     if self.pawn.pawn_health <= 50 {
                         color = Color32::RED;
                     }
-                    let stroke = PathStroke::new(2f32, color);
+                    let stroke = egui::Stroke::new(2f32, color);
                     for line in lines.iter_mut() {
                         if !matrix.transform(&mut line[0]) {
                             continue;
@@ -168,7 +168,7 @@ impl Entity {
                         if !matrix.transform(&mut line[1]) {
                             continue;
                         }
-                        g.line_segment([line[0].to_pos2(), line[1].to_pos2()], stroke.clone());
+                        g.line_segment([line[0].to_pos2(), line[1].to_pos2()], stroke);
                     }
                 }
             }

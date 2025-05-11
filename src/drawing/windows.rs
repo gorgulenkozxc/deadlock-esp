@@ -248,9 +248,10 @@ fn load_font(ctx: &Context) {
     file.read_to_end(&mut font_data).unwrap();
 
     let font_data: &'static [u8] = Box::leak(font_data.into_boxed_slice());
-    fonts
-        .font_data
-        .insert("my_font".to_owned(), FontData::from_static(font_data));
+    fonts.font_data.insert(
+        "my_font".to_owned(),
+        FontData::from_static(font_data).into(),
+    );
 
     fonts
         .families

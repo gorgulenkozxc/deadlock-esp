@@ -163,13 +163,13 @@ impl Overlay {
             let class = PCSTR::null();
             let window_name = CString::new("overlay egui").unwrap();
             let window = PCSTR(window_name.as_ptr() as *const u8);
-            FindWindowExA(HWND::default(), HWND::default(), class, window).unwrap()
+            FindWindowExA(Some(HWND::default()), Some(HWND::default()), class, window).unwrap()
         };
         self.game_hwnd = unsafe {
             let class = PCSTR::null();
             let window_name = CString::new("Deadlock").unwrap();
             let window = PCSTR(window_name.as_ptr() as *const u8);
-            FindWindowExA(HWND::default(), HWND::default(), class, window).unwrap()
+            FindWindowExA(Some(HWND::default()), Some(HWND::default()), class, window).unwrap()
         };
         if self.overlay_hwnd.0.is_null() {
             log::error!("Overlay HWND is invalid");
@@ -251,7 +251,7 @@ fn draw_background(ctx: &egui::Context, ui: &mut egui::Ui) {
     let screen_rect = ctx.screen_rect();
     ui.painter().rect_filled(
         screen_rect,
-        egui::Rounding::default(),
+        egui::CornerRadius::default(),
         egui::Color32::from_rgba_unmultiplied(0, 0, 0, 150),
     );
 }
