@@ -86,7 +86,7 @@ pub fn initialize() {
                 .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
                 .1 as usize;
 
-            let view_matrix_sig = Signature::new("48 8D ? ? ? ? ? 48 C1 E0 06 48 03 C1 C3", 6, 10);
+            let view_matrix_sig = Signature::new("48 8D ? ? ? ? ? 48 C1 E0 06 48 03 C1 C3", 3, 7);
             crate::external::offsets::client::dwViewMatrix = view_matrix_sig
                 .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
                 .1 as usize;

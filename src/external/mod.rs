@@ -230,6 +230,7 @@ impl External {
                     local_player,
                 );
             }
+
             if settings.esp_players.render {
                 for player in self.players.iter() {
                     if !player.is_invalid()
@@ -242,6 +243,7 @@ impl External {
                         }
                     }
                 }
+
                 if settings.offscreen.enable {
                     // p_i, p_distance;
                     let local_pos = local_player.game_scene_node.position;
