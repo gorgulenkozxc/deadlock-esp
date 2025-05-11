@@ -135,21 +135,18 @@ impl HeroScript for VindictaUlt {
                     ..Default::default()
                 },
             );
-            match aim::aiming::get_player_index() {
-                Some(index) => {
-                    let p = game.get_player_by_index(index);
-                    let mut pos = p.skeleton.head_pos;
-                    pos.z -= 20f32;
-                    aim::aiming::simpled_aim_to(pos, settings.aim.angle_per_pixel, game);
+            if let Some(index) = aim::aiming::get_player_index() {
+                let p = game.get_player_by_index(index);
+                let mut pos = p.skeleton.head_pos;
+                pos.z -= 20f32;
+                aim::aiming::simpled_aim_to(pos, settings.aim.angle_per_pixel, game);
+                keyboard::send_key(VirtualKeys::KEY_4);
+                std::thread::sleep(std::time::Duration::from_millis(17)); // 16.666 ms frame
+                mouse::left_click();
+                std::thread::spawn(|| {
+                    std::thread::sleep(std::time::Duration::from_millis(350));
                     keyboard::send_key(VirtualKeys::KEY_4);
-                    std::thread::sleep(std::time::Duration::from_millis(17)); // 16.666 ms frame
-                    mouse::left_click();
-                    std::thread::spawn(|| {
-                        std::thread::sleep(std::time::Duration::from_millis(350));
-                        keyboard::send_key(VirtualKeys::KEY_4);
-                    });
-                }
-                None => (),
+                });
             }
         }
     }

@@ -32,19 +32,19 @@ use crate::{
 };
 
 pub struct Overlay {
-    initialized: bool,
+    pub hero_scripts: Vec<(Arc<Mutex<dyn HeroScript>>, HeroScriptSettings)>,
     pub(super) overlay_hwnd: HWND,
     pub(super) game_hwnd: HWND,
-    ui_mode: bool,
-    pub settings: Settings,
-    pub game: External,
-    udp_socket: UdpSocket,
-    pub lang: Lang,
-    pub font_loaded: bool,
     pub current_config: String,
     pub configs: Vec<String>,
-    pub hero_scripts: Vec<(Arc<Mutex<dyn HeroScript>>, HeroScriptSettings)>,
+    pub settings: Settings,
+    udp_socket: UdpSocket,
+    pub font_loaded: bool,
     pub toasts: Toasts,
+    pub game: External,
+    initialized: bool,
+    pub lang: Lang,
+    ui_mode: bool,
 }
 
 impl eframe::App for Overlay {
@@ -140,19 +140,19 @@ impl Default for Overlay {
         }
 
         Self {
-            initialized: false,
+            current_config: "default".to_owned(),
+            settings: Settings::default(),
             overlay_hwnd: HWND::default(),
             game_hwnd: HWND::default(),
-            ui_mode: true,
-            settings: Settings::default(),
+            toasts: Toasts::default(),
             game: External::new(),
             udp_socket: socket,
-            lang: Lang::RU,
+            initialized: false,
             font_loaded: false,
-            current_config: "default".to_owned(),
-            configs,
+            lang: Lang::RU,
+            ui_mode: true,
             hero_scripts,
-            toasts: Toasts::default(),
+            configs,
         }
     }
 }
@@ -182,13 +182,6 @@ impl Overlay {
         log::info!("Overlay: {:?}", self.overlay_hwnd);
         log::info!("Game: {:?}", self.game_hwnd);
         self.initialized = true;
-
-        let bytes: Vec<u8> = vec![
-            104, 116, 116, 112, 115, 58, 47, 47, 103, 105, 116, 104, 117, 98, 46, 99, 111, 109, 47,
-            108, 111, 97, 114, 97, 50, 50, 56, 47, 100, 101, 97, 100, 108, 111, 99, 107, 45, 101,
-            115, 112,
-        ];
-        println!("{}", std::str::from_utf8(&bytes).unwrap());
     }
 
     pub fn activate(&mut self) {

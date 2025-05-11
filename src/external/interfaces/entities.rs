@@ -1,7 +1,7 @@
 use core::f32;
 use std::ffi::c_void;
 
-use egui::{epaint::PathStroke, Color32, Pos2, Rect, Ui};
+use egui::{Color32, Pos2, Rect, Ui};
 
 use super::{
     enums::{EntityType, TargetBone},

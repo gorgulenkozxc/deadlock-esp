@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicPtr, Ordering};
 pub fn draw(
     g: &egui::Painter,
     settings: &AimSettings,
-    entities: &Vec<Entity>,
+    entities: &[Entity],
     matrix: &Matrix,
     local_player: &Player,
 ) {

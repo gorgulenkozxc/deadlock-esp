@@ -206,7 +206,7 @@ impl Default for MovementScript {
 impl MovementScript {
     unsafe fn update_slide(&mut self, local_player: &Player, ability_slide: &Ability) {
         let sliding: bool =
-            read_memory(ability_slide.ptr.add(CCitadel_Ability_Slide::m_bIsSliding));
+            unsafe { read_memory(ability_slide.ptr.add(CCitadel_Ability_Slide::m_bIsSliding)) };
         if sliding {
             let vel = (f32::abs(local_player.pawn.velocity.x).powf(2f32)
                 + f32::abs(local_player.pawn.velocity.y).powf(2f32)

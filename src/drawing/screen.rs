@@ -8,7 +8,7 @@ use windows::Win32::{
 /// returns: (pos, size)
 pub fn detect() -> (Vec2, Vec2) {
     unsafe {
-        if multi_monitor_support() {
+        if multiple_monitors_present() {
             let hdc = GetDC(Some(HWND(std::ptr::null_mut())));
 
             let width = GetDeviceCaps(Some(hdc), HORZRES) as f32;
@@ -32,8 +32,8 @@ pub fn detect() -> (Vec2, Vec2) {
     }
 }
 
-unsafe fn multi_monitor_support() -> bool {
-    let monitors = GetSystemMetrics(SM_CMONITORS);
+unsafe fn multiple_monitors_present() -> bool {
+    let monitors = unsafe { GetSystemMetrics(SM_CMONITORS) };
     log::info!("SM_CMONITORS: {monitors}");
     monitors > 1
 }

@@ -27,7 +27,7 @@ impl Signature {
         }
     }
 
-    pub unsafe fn find(&self, memory: &Vec<u8>, module_ptr: *mut c_void) -> (bool, *mut c_void) {
+    pub unsafe fn find(&self, memory: &[u8], module_ptr: *mut c_void) -> (bool, *mut c_void) {
         unsafe {
             let pattern: Vec<u8> = self.parse_pattern();
             for i in 0..memory.len() {
@@ -184,15 +184,18 @@ unsafe fn find_module(module_name: &str) -> MODULEINFO {
             )
             .unwrap();
 
-            for i in 0..cb_needed as usize / std::mem::size_of::<HMODULE>() {
+            for h_mod in h_mods
+                .iter()
+                .take(cb_needed as usize / std::mem::size_of::<HMODULE>())
+            {
                 let mut file_name: [u8; 32] = [0u8; 32];
-                GetModuleBaseNameA(process_handle, Some(h_mods[i]), &mut file_name);
+                GetModuleBaseNameA(process_handle, Some(*h_mod), &mut file_name);
                 let file_name_str = str::from_utf8(&file_name).unwrap();
                 if file_name_str.starts_with(module_name) {
                     let mut module_info = MODULEINFO::default();
                     GetModuleInformation(
                         process_handle,
-                        h_mods[i],
+                        *h_mod,
                         &mut module_info,
                         std::mem::size_of::<MODULEINFO>() as u32,
                     )

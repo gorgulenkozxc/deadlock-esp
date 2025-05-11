@@ -149,12 +149,15 @@ impl Observers {
         entity_list_ptr: *mut c_void,
         player_pawn: *mut c_void,
     ) -> *mut c_void {
-        let player_obs: *mut c_void =
-            read_memory(player_pawn.add(C_BasePlayerPawn::m_pObserverServices));
-        let player_obs_target: *mut c_void =
-            read_memory(player_obs.add(CPlayer_ObserverServices::m_hObserverTarget));
-        let player_obs_target_pawn: *mut c_void = from_handle(entity_list_ptr, player_obs_target);
-        player_obs_target_pawn
+        unsafe {
+            let player_obs: *mut c_void =
+                read_memory(player_pawn.add(C_BasePlayerPawn::m_pObserverServices));
+            let player_obs_target: *mut c_void =
+                read_memory(player_obs.add(CPlayer_ObserverServices::m_hObserverTarget));
+            let player_obs_target_pawn: *mut c_void =
+                from_handle(entity_list_ptr, player_obs_target);
+            player_obs_target_pawn
+        }
     }
 }
 
@@ -275,7 +278,7 @@ impl Skeleton {
     pub unsafe fn update_head_unknown(&mut self) {
         self.head_pos.z = -100.;
         for i in 0..64 {
-            let vec3: Vector3 = read_memory(self.bone_array.add(i as usize * 32usize));
+            let vec3: Vector3 = unsafe { read_memory(self.bone_array.add(i as usize * 32usize)) };
             if vec3.z > self.head_pos.z {
                 self.head_pos = vec3;
             }
@@ -283,7 +286,7 @@ impl Skeleton {
     }
 
     unsafe fn update_head(&mut self, index: i32) {
-        self.head_pos = read_memory(self.bone_array.add(index as usize * 32usize));
+        self.head_pos = unsafe { read_memory(self.bone_array.add(index as usize * 32usize)) };
     }
 }
 
