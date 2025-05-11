@@ -20,7 +20,7 @@ use interfaces::{
     math::{Matrix, Vector3},
     structs::{Camera, Observers},
 };
-use offsets::client_dll::{CPlayer_CameraServices, C_BasePlayerPawn, C_GameRules};
+use offsets::client_dll::{C_BasePlayerPawn, C_GameRules, CPlayer_CameraServices};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},
@@ -48,7 +48,10 @@ pub struct External {
 impl External {
     pub fn new() -> Self {
         unsafe {
-            let client_ptr = memory::CLIENT_MODULE.lpBaseOfDll;
+            let module = memory::get_client_module().unwrap();
+            println!("module: {module:?}");
+            let client_ptr = memory::get_client_module().unwrap().lpBaseOfDll;
+            println!("client_ptr: {client_ptr:?}");
             let players: [Player; PLAYERS_LEN] = [
                 Player::new(1),
                 Player::new(2),
@@ -90,9 +93,11 @@ impl External {
         hero_scripts: &mut Vec<(Arc<Mutex<dyn HeroScript>>, HeroScriptSettings)>,
         settings: &mut Settings,
     ) {
-        self.global_vars.update(self.client_ptr);
-        self.game_rules
-            .update(self.client_ptr, self.global_vars.interval);
+        unsafe {
+            self.global_vars.update(self.client_ptr);
+            self.game_rules
+                .update(self.client_ptr, self.global_vars.interval);
+        }
         self.camera.update(self.client_ptr);
         unsafe {
             let matrix: Matrix = read_memory(self.client_ptr.add(offsets::client::dwViewMatrix));

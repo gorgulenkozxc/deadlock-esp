@@ -1,4 +1,5 @@
 use core::{ffi::c_void, str};
+use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 use windows::Win32::{
@@ -27,28 +28,30 @@ impl Signature {
     }
 
     pub unsafe fn find(&self, memory: &Vec<u8>, module_ptr: *mut c_void) -> (bool, *mut c_void) {
-        let pattern: Vec<u8> = self.parse_pattern();
-        for i in 0..memory.len() {
-            let mut pattern_match = true;
-            for j in 0..pattern.len() {
-                if pattern[j] != 0 && memory[i + j] != pattern[j] {
-                    pattern_match = false;
-                    break;
+        unsafe {
+            let pattern: Vec<u8> = self.parse_pattern();
+            for i in 0..memory.len() {
+                let mut pattern_match = true;
+                for j in 0..pattern.len() {
+                    if pattern[j] != 0 && memory[i + j] != pattern[j] {
+                        pattern_match = false;
+                        break;
+                    }
+                }
+                if pattern_match {
+                    let pattern_address = module_ptr.add(i);
+                    let of: i32 = read_memory(pattern_address.add(self.offset));
+                    let result = pattern_address
+                        .add(of as usize)
+                        .add(self.extra)
+                        .sub(module_ptr as usize);
+                    log::info!("{:?}\t({})", result, self.pattern);
+                    return (true, result);
                 }
             }
-            if pattern_match {
-                let pattern_address = module_ptr.add(i);
-                let of: i32 = read_memory(pattern_address.add(self.offset));
-                let result = pattern_address
-                    .add(of as usize)
-                    .add(self.extra)
-                    .sub(module_ptr as usize);
-                log::info!("{:?}\t({})", result, self.pattern);
-                return (true, result);
-            }
+            log::error!("not found {:?}", self);
+            (false, std::ptr::null_mut::<c_void>())
         }
-        log::error!("not found {:?}", self);
-        (false, std::ptr::null_mut::<c_void>())
     }
 
     pub fn parse_pattern(&self) -> Vec<u8> {
@@ -67,58 +70,56 @@ impl Signature {
 pub fn initialize() {
     unsafe {
         let find_offsets = true;
-        PROCESS_HANDLE = find_process();
-        CLIENT_MODULE = find_module("client.dll");
+
+        let process_handle = find_process();
+        set_process_handle(process_handle);
+
+        let client_module = find_module("client.dll");
+        set_client_module(client_module);
+
         log::info!("Initialized");
+
         if find_offsets {
+            let client_module = get_client_module().unwrap();
+
             let client_memory = read_memory_bytes(
-                CLIENT_MODULE.lpBaseOfDll,
-                CLIENT_MODULE.SizeOfImage as usize,
+                client_module.lpBaseOfDll,
+                client_module.SizeOfImage as usize,
             );
 
             log::info!(
                 "Base of dll: {:?}. Process handle: {:?}",
-                CLIENT_MODULE.lpBaseOfDll,
-                PROCESS_HANDLE
+                client_module.lpBaseOfDll,
+                get_process_handle().unwrap()
             );
 
             let entity_list_sig = Signature::new("48 8B 0D ? ? ? ? C7 45 0F C8 00 00 00", 3, 7);
             crate::external::offsets::client::dwEntityList = entity_list_sig
-                .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
+                .find(&client_memory, client_module.lpBaseOfDll)
                 .1 as usize;
 
             let view_matrix_sig = Signature::new("48 8D ? ? ? ? ? 48 C1 E0 06 48 03 C1 C3", 3, 7);
             crate::external::offsets::client::dwViewMatrix = view_matrix_sig
-                .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
+                .find(&client_memory, client_module.lpBaseOfDll)
                 .1 as usize;
 
             let local_player_sig = Signature::new("48 8B 1D ? ? ? ? 48 8B 6C 24", 3, 7);
             crate::external::offsets::client::dwLocalPlayerController = local_player_sig
-                .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
+                .find(&client_memory, client_module.lpBaseOfDll)
                 .1 as usize;
 
             let camera_sig = Signature::new("48 8D 3D ? ? ? ? 8B D9", 3, 7);
             crate::external::offsets::client::dwCCitadelCameraManager =
-                camera_sig.find(&client_memory, CLIENT_MODULE.lpBaseOfDll).1 as usize;
+                camera_sig.find(&client_memory, client_module.lpBaseOfDll).1 as usize;
 
             let global_vars_sig = Signature::new("48 8B 05 ? ? ? ? 44 3B 40", 3, 7);
             crate::external::offsets::client::dwGlobalVars = global_vars_sig
-                .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
+                .find(&client_memory, client_module.lpBaseOfDll)
                 .1 as usize;
             let game_rules_sig = Signature::new("48 89 1d ? ? ? ? ff 15 ? ? ? ? 84 c0", 3, 7);
             crate::external::offsets::client::dwGameRules = game_rules_sig
-                .find(&client_memory, CLIENT_MODULE.lpBaseOfDll)
+                .find(&client_memory, client_module.lpBaseOfDll)
                 .1 as usize;
-
-            log::info!(
-                "dwEntityList: {:#x}\ndwViewMatrix: {:#x}\ndwLocalPlayerController: {:#x}\ndwCCitadelCameraManager: {:#x}\ndwGlobalVars: {:#x}\ndwGameRules: {:#x}",
-                crate::external::offsets::client::dwEntityList,
-                crate::external::offsets::client::dwViewMatrix,
-                crate::external::offsets::client::dwLocalPlayerController,
-                crate::external::offsets::client::dwCCitadelCameraManager,
-                crate::external::offsets::client::dwGlobalVars,
-                crate::external::offsets::client::dwGameRules
-            );
 
             // let game_entity_system_sig = Signature::new("48 8B 1D ? ? ? ? 48 89 1D", 3, 7);
             // crate::external::offsets::client::dwGameEntitySystem = game_entity_system_sig.find(&client_memory, CLIENT_MODULE.lpBaseOfDll).1 as usize;
@@ -150,12 +151,14 @@ unsafe fn find_process() -> HANDLE {
                 }
             });
 
-            let handle = OpenProcess(
-                PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                false,
-                pid.as_u32(),
-            )
-            .unwrap();
+            let handle = unsafe {
+                OpenProcess(
+                    PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+                    false,
+                    pid.as_u32(),
+                )
+                .unwrap()
+            };
 
             log::info!("Process found: {:?}", handle);
             handle
@@ -168,46 +171,49 @@ unsafe fn find_process() -> HANDLE {
 }
 
 unsafe fn find_module(module_name: &str) -> MODULEINFO {
-    if !PROCESS_HANDLE.is_invalid() {
-        let mut h_mods: [HMODULE; 256] = [HMODULE::default(); 256];
-        let mut cb_needed = 0u32;
-        EnumProcessModules(
-            PROCESS_HANDLE,
-            &mut h_mods[0],
-            std::mem::size_of::<HMODULE>() as u32 * h_mods.len() as u32,
-            &mut cb_needed,
-        )
-        .unwrap();
+    unsafe {
+        let process_handle = get_process_handle().unwrap();
+        if !process_handle.is_invalid() {
+            let mut h_mods: [HMODULE; 256] = [HMODULE::default(); 256];
+            let mut cb_needed = 0u32;
+            EnumProcessModules(
+                process_handle,
+                &mut h_mods[0],
+                std::mem::size_of::<HMODULE>() as u32 * h_mods.len() as u32,
+                &mut cb_needed,
+            )
+            .unwrap();
 
-        for i in 0..cb_needed as usize / std::mem::size_of::<HMODULE>() {
-            let mut file_name: [u8; 32] = [0u8; 32];
-            GetModuleBaseNameA(PROCESS_HANDLE, Some(h_mods[i]), &mut file_name);
-            let file_name_str = str::from_utf8(&file_name).unwrap();
-            if file_name_str.starts_with(module_name) {
-                let mut module_info = MODULEINFO::default();
-                GetModuleInformation(
-                    PROCESS_HANDLE,
-                    h_mods[i],
-                    &mut module_info,
-                    std::mem::size_of::<MODULEINFO>() as u32,
-                )
-                .unwrap();
-                log::info!("Client: {:?}", module_info);
-                return module_info;
+            for i in 0..cb_needed as usize / std::mem::size_of::<HMODULE>() {
+                let mut file_name: [u8; 32] = [0u8; 32];
+                GetModuleBaseNameA(process_handle, Some(h_mods[i]), &mut file_name);
+                let file_name_str = str::from_utf8(&file_name).unwrap();
+                if file_name_str.starts_with(module_name) {
+                    let mut module_info = MODULEINFO::default();
+                    GetModuleInformation(
+                        process_handle,
+                        h_mods[i],
+                        &mut module_info,
+                        std::mem::size_of::<MODULEINFO>() as u32,
+                    )
+                    .unwrap();
+                    log::info!("Client: {:?}", module_info);
+                    return module_info;
+                }
             }
         }
+        log::error!("Client module not found");
+        MODULEINFO::default()
     }
-    log::error!("Client module not found");
-    MODULEINFO::default()
 }
 
-pub fn read_memory<T: Copy>(address: *mut c_void) -> T {
+pub unsafe fn read_memory<T: Copy>(address: *mut c_void) -> T {
     unsafe {
         let size = std::mem::size_of::<T>();
         let mut buffer = std::mem::zeroed::<T>();
         let bytes_of_read: Option<*mut usize> = Default::default();
         _ = ReadProcessMemory(
-            PROCESS_HANDLE,
+            get_process_handle().unwrap(),
             address,
             &mut buffer as *const T as *mut c_void,
             size,
@@ -222,13 +228,47 @@ pub unsafe fn read_memory_bytes(address: *mut c_void, size: usize) -> Vec<u8> {
     let buffer_ptr = buffer.as_ptr() as *mut c_void;
 
     let bytes_of_read: Option<*mut usize> = Default::default();
-    _ = ReadProcessMemory(PROCESS_HANDLE, address, buffer_ptr, size, bytes_of_read);
+    _ = unsafe {
+        ReadProcessMemory(
+            get_process_handle().unwrap(),
+            address,
+            buffer_ptr,
+            size,
+            bytes_of_read,
+        )
+    };
     buffer
 }
 
-pub static mut PROCESS_HANDLE: HANDLE = HANDLE(std::ptr::null_mut());
-pub static mut CLIENT_MODULE: MODULEINFO = MODULEINFO {
-    lpBaseOfDll: 0 as *mut c_void,
-    SizeOfImage: 0,
-    EntryPoint: 0 as *mut c_void,
-};
+#[repr(transparent)]
+pub struct ThreadSafeHandle(HANDLE);
+unsafe impl Send for ThreadSafeHandle {}
+unsafe impl Sync for ThreadSafeHandle {}
+
+#[repr(transparent)]
+pub struct ThreadSafeModule(MODULEINFO);
+unsafe impl Send for ThreadSafeModule {}
+unsafe impl Sync for ThreadSafeModule {}
+
+pub static PROCESS_HANDLE: RwLock<Option<ThreadSafeHandle>> = RwLock::new(None);
+pub static CLIENT_MODULE: RwLock<Option<ThreadSafeModule>> = RwLock::new(None);
+
+fn set_process_handle(handle: HANDLE) {
+    PROCESS_HANDLE
+        .write()
+        .unwrap()
+        .replace(ThreadSafeHandle(handle));
+}
+pub fn get_process_handle() -> Option<HANDLE> {
+    PROCESS_HANDLE.read().unwrap().as_ref().map(|h| h.0)
+}
+
+fn set_client_module(module: MODULEINFO) {
+    CLIENT_MODULE
+        .write()
+        .unwrap()
+        .replace(ThreadSafeModule(module));
+}
+pub fn get_client_module() -> Option<MODULEINFO> {
+    CLIENT_MODULE.read().unwrap().as_ref().map(|m| m.0)
+}

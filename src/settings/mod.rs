@@ -11,7 +11,7 @@ use structs::{
 
 pub mod mgr {
     use std::{
-        fs::{create_dir, read_dir, remove_file, File},
+        fs::{File, create_dir, read_dir, remove_file},
         io::{Read, Write},
         path::PathBuf,
     };

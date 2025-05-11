@@ -2,18 +2,20 @@
 
 use crate::{
     external::{
+        External,
         interfaces::{
             entities::Player,
             enums::EntityType,
             math::{Plane3D, Vector3},
             structs::Camera,
         },
-        External,
     },
     input::{keyboard::KeyState, mouse},
     settings::structs::{AimProperties, AimSettings},
 };
-use egui::{util::undoer::Settings, Pos2};
+use egui::{Pos2, util::undoer::Settings};
+use std::sync::RwLock;
+use std::sync::atomic::{AtomicPtr, Ordering};
 use std::{
     ffi::c_void,
     net::UdpSocket,
@@ -24,20 +26,14 @@ use std::{
 use super::drawing;
 
 pub fn update(settings: &AimSettings, game: &mut External, socket: &UdpSocket) {
-    unsafe {
-        drawing::DISPLAY_POS = Vector3 {
-            x: 0f32,
-            y: 0f32,
-            z: 0f32,
-        };
-    }
+    drawing::set_display_pos(Vector3::default());
     if settings.angle_per_pixel == 0f32 || (!settings.players.enable && !settings.creeps.enable) {
         return;
     }
 
     unsafe {
         update_targets(settings, game);
-        match player_index {
+        match get_player_index() {
             Some(index) => {
                 let target = game.get_player_by_index(index);
                 let mut target_pos = target.skeleton.target_bone_pos;
@@ -46,11 +42,11 @@ pub fn update(settings: &AimSettings, game: &mut External, socket: &UdpSocket) {
                 }
                 let mut target_pos_screen = target_pos;
                 game.view_matrix.transform(&mut target_pos_screen);
-                drawing::DISPLAY_POS = Vector3 {
+                drawing::set_display_pos(Vector3 {
                     x: target_pos_screen.x,
                     y: target_pos_screen.y,
                     z: 0f32,
-                };
+                });
                 aim_to(
                     target_pos,
                     settings.angle_per_pixel,
@@ -60,7 +56,7 @@ pub fn update(settings: &AimSettings, game: &mut External, socket: &UdpSocket) {
                 );
             }
             None => {
-                if let Some(entity_index) = entity_array_index {
+                if let Some(entity_index) = get_entity_array_index() {
                     let entity = game.entities[entity_index];
                     let mut target_pos = entity.game_scene_node.position;
                     if settings.creeps.velocity_prediction {
@@ -84,6 +80,7 @@ pub fn update(settings: &AimSettings, game: &mut External, socket: &UdpSocket) {
 }
 
 unsafe fn update_targets(settings: &AimSettings, game: &mut External) {
+    let mut player_index = get_player_index();
     if settings.players.enable {
         if settings.players.key.state == KeyState::Down
             || settings.players.key.state == KeyState::Pressed
@@ -95,10 +92,12 @@ unsafe fn update_targets(settings: &AimSettings, game: &mut External) {
                 find_player(game, game.get_local_player(), &settings.players);
             }
         } else {
+            set_player_index(None);
             player_index = None;
         }
     }
     if settings.creeps.enable {
+        let entity_array_index = get_entity_array_index();
         if player_index.is_none() && settings.creeps.key.state == KeyState::Down
             || settings.creeps.key.state == KeyState::Pressed
         {
@@ -110,14 +109,14 @@ unsafe fn update_targets(settings: &AimSettings, game: &mut External) {
                 find_entity(game, game.get_local_player(), &settings.creeps, settings);
             }
         } else {
-            entity_array_index = None;
+            set_player_index(None);
         }
     }
 }
 
 pub fn find_player(game: &External, local_player: &Player, settings: &AimProperties) {
     if !settings.targeting {
-        unsafe { player_index = None };
+        set_player_index(None);
     }
     let mut distance = 9999f32;
     let center = game.screen.center();
@@ -135,9 +134,7 @@ pub fn find_player(game: &External, local_player: &Player, settings: &AimPropert
                     ) < settings.range
                 {
                     distance = cur_distance;
-                    unsafe {
-                        player_index = Some(p.index as usize);
-                    };
+                    set_player_index(Some(p.index as usize));
                 }
             }
         }
@@ -151,7 +148,7 @@ fn find_entity(
     global_settings: &AimSettings,
 ) {
     if !settings.targeting {
-        unsafe { entity_array_index = None };
+        set_entity_array_index(None);
     }
     let mut distance = 9999f32;
     let mut priority = 0;
@@ -186,7 +183,7 @@ fn find_entity(
                     priority = ent.class.as_priority_2(global_settings.priority);
                     distance = cur_distance;
                     unsafe {
-                        entity_array_index = Some(i);
+                        set_entity_array_index(Some(i));
                     };
                 }
             }
@@ -398,5 +395,20 @@ pub fn calibrate(game: &mut External) -> f32 {
 fn in_fov(p: Vector3, c: Pos2, radius: f32) -> bool {
     Vector3::distance(p, Vector3::from_pos2(c)) <= radius
 }
-pub static mut player_index: Option<usize> = None;
-static mut entity_array_index: Option<usize> = None;
+
+static PLAYER_INDEX: RwLock<Option<usize>> = RwLock::new(None);
+static ENTITY_ARRAY_INDEX: RwLock<Option<usize>> = RwLock::new(None);
+
+pub fn set_player_index(index: Option<usize>) {
+    *PLAYER_INDEX.write().unwrap() = index;
+}
+pub fn get_player_index() -> Option<usize> {
+    PLAYER_INDEX.read().map(|guard| *guard).unwrap()
+}
+
+pub fn set_entity_array_index(index: Option<usize>) {
+    *ENTITY_ARRAY_INDEX.write().unwrap() = index;
+}
+pub fn get_entity_array_index() -> Option<usize> {
+    ENTITY_ARRAY_INDEX.read().map(|guard| *guard).unwrap()
+}

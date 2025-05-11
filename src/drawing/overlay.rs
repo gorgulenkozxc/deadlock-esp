@@ -1,5 +1,5 @@
 use eframe::{NativeOptions, Renderer};
-use egui::{emath::Pos2, CentralPanel, Vec2, ViewportBuilder};
+use egui::{CentralPanel, Vec2, ViewportBuilder, emath::Pos2};
 use egui_notify::Toasts;
 use std::{
     ffi::CString,
@@ -7,7 +7,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use windows::{
-    core::PCSTR,
     Win32::{
         Foundation::HWND,
         Graphics::Gdi::UpdateWindow,
@@ -16,16 +15,17 @@ use windows::{
             WINDOW_LONG_PTR_INDEX,
         },
     },
+    core::PCSTR,
 };
 
 use super::{localization::Lang, screen};
 use crate::{
     external::{
+        External,
         cheat::{
             esp::{self, radar::draw_radar_window},
             scripts::{self, HeroScript, HeroScriptSettings},
         },
-        External,
     },
     input::keyboard::{Key, KeyState},
     settings::{self, structs::Settings},

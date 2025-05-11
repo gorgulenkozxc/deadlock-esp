@@ -1,13 +1,13 @@
 use super::HeroScript;
 use crate::{
     external::{
-        cheat::aim::{self, aiming},
+        External,
+        cheat::aim::{self},
         interfaces::{
             entities::Player,
             enums::{AbilitySlot, Hero},
             math::Vector3,
         },
-        External,
     },
     input::{
         keyboard::{self, KeyState, VirtualKeys},
@@ -41,37 +41,35 @@ impl Shiv {
 impl HeroScript for Shiv {
     fn update(&mut self, game: &External, _: KeyState, settings: &mut Settings) {
         if settings.aim.players.enable {
-            unsafe {
-                if aiming::player_index.is_some() {
-                    let local_player = game.get_local_player();
-                    let ult_ability = local_player.abilities.get(AbilitySlot::ESlot_Signature_4);
-                    if ult_ability.is_none() {
-                        return;
-                    }
-                    let ult_ability = ult_ability.unwrap();
-                    if ult_ability.coodown {
-                        return;
-                    }
-                    let upgrade = ult_ability.points;
-                    let player = game.get_player_by_index(aiming::player_index.unwrap());
-                    let screen_center = game.screen.center();
-                    if Vector3::distance(
-                        aim::drawing::DISPLAY_POS,
-                        Vector3 {
-                            x: screen_center.x,
-                            y: screen_center.y,
-                            z: 0f32,
-                        },
-                    ) < 355f32
-                        && (Vector3::distance(
-                            player.game_scene_node.position,
-                            local_player.game_scene_node.position,
-                        ) * 0.0254
-                            < 20f32)
-                        && self.can_kill(local_player, player, upgrade)
-                    {
-                        keyboard::send_key(VirtualKeys::KEY_4);
-                    }
+            if let Some(index) = aim::aiming::get_player_index() {
+                let local_player = game.get_local_player();
+                let ult_ability = local_player.abilities.get(AbilitySlot::ESlot_Signature_4);
+                if ult_ability.is_none() {
+                    return;
+                }
+                let ult_ability = ult_ability.unwrap();
+                if ult_ability.coodown {
+                    return;
+                }
+                let upgrade = ult_ability.points;
+                let player = game.get_player_by_index(index);
+                let screen_center = game.screen.center();
+                if Vector3::distance(
+                    aim::drawing::get_display_pos().unwrap(),
+                    Vector3 {
+                        x: screen_center.x,
+                        y: screen_center.y,
+                        z: 0f32,
+                    },
+                ) < 355f32
+                    && (Vector3::distance(
+                        player.game_scene_node.position,
+                        local_player.game_scene_node.position,
+                    ) * 0.0254
+                        < 20f32)
+                    && self.can_kill(local_player, player, upgrade)
+                {
+                    keyboard::send_key(VirtualKeys::KEY_4);
                 }
             }
         }
@@ -137,9 +135,9 @@ impl HeroScript for VindictaUlt {
                     ..Default::default()
                 },
             );
-            unsafe {
-                if aim::aiming::player_index.is_some() {
-                    let p = game.get_player_by_index(aim::aiming::player_index.unwrap());
+            match aim::aiming::get_player_index() {
+                Some(index) => {
+                    let p = game.get_player_by_index(index);
                     let mut pos = p.skeleton.head_pos;
                     pos.z -= 20f32;
                     aim::aiming::simpled_aim_to(pos, settings.aim.angle_per_pixel, game);
@@ -151,6 +149,7 @@ impl HeroScript for VindictaUlt {
                         keyboard::send_key(VirtualKeys::KEY_4);
                     });
                 }
+                None => (),
             }
         }
     }

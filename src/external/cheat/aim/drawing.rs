@@ -5,6 +5,7 @@ use crate::{
     },
     settings::structs::{AimProperties, AimSettings},
 };
+use std::sync::atomic::{AtomicPtr, Ordering};
 
 pub fn draw(
     g: &egui::Painter,
@@ -36,19 +37,25 @@ pub fn draw(
 
 pub fn draw_fov(g: &egui::Painter, properties: &AimProperties) {
     let stroke = egui::Stroke::new(2f32, properties.color);
-    unsafe {
-        if !DISPLAY_POS.is_zero() {
-            g.line_segment(
-                [g.ctx().screen_rect().center(), DISPLAY_POS.to_pos2()],
-                stroke,
-            );
+    if let Some(pos) = get_display_pos() {
+        if !pos.is_zero() {
+            g.line_segment([g.ctx().screen_rect().center(), pos.to_pos2()], stroke);
         }
     }
     g.circle_stroke(g.ctx().screen_rect().center(), properties.fov, stroke);
 }
 
-pub static mut DISPLAY_POS: Vector3 = Vector3 {
-    x: 0f32,
-    y: 0f32,
-    z: 0f32,
-};
+pub static DISPLAY_POS: AtomicPtr<Vector3> = AtomicPtr::new(std::ptr::null_mut());
+
+pub fn get_display_pos() -> Option<Vector3> {
+    let ptr = DISPLAY_POS.load(Ordering::Relaxed);
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { *ptr })
+    }
+}
+
+pub fn set_display_pos(mut vec: Vector3) {
+    DISPLAY_POS.store(&mut vec, Ordering::Relaxed);
+}

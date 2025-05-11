@@ -5,18 +5,20 @@ use super::{
 };
 use crate::{
     external::{
-        offsets::{client::*, client_dll::*},
         PLAYERS_LEN,
+        offsets::{client::*, client_dll::*},
     },
     memory::read_memory,
 };
 use std::{ffi::c_void, fmt::Debug};
 
 pub unsafe fn from_handle(entity_list_ptr: *mut c_void, handle: *mut c_void) -> *mut c_void {
-    let list_entry: *mut c_void =
-        read_memory(entity_list_ptr.add(0x8 * ((handle as usize & 0x7FFF) >> 0x9) + 0x10));
-    let result: *mut c_void = read_memory(list_entry.add(0x78 * (handle as usize & 0x1FF)));
-    result
+    unsafe {
+        let list_entry: *mut c_void =
+            read_memory(entity_list_ptr.add(0x8 * ((handle as usize & 0x7FFF) >> 0x9) + 0x10));
+        let result: *mut c_void = read_memory(list_entry.add(0x78 * (handle as usize & 0x1FF)));
+        result
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -301,7 +303,7 @@ impl Default for Controller {
 
 impl Controller {
     unsafe fn get_ptr(&mut self, base_ptr: *mut c_void, index: i32) -> *mut c_void {
-        read_memory(base_ptr.offset(0x78 * (index & 0x1FF) as isize))
+        unsafe { read_memory(base_ptr.offset(0x78 * (index & 0x1FF) as isize)) }
     }
 
     pub fn update(&mut self, base_ptr: *mut c_void, index: i32) {
@@ -336,7 +338,7 @@ impl Default for Pawn {
 
 impl Pawn {
     unsafe fn get_ptr(&mut self, entry: *mut c_void, pawn_handle: usize) -> *mut c_void {
-        read_memory(entry.add(0x78 * (pawn_handle & 0x1FF)))
+        unsafe { read_memory(entry.add(0x78 * (pawn_handle & 0x1FF))) }
     }
 
     pub fn update(&mut self, entry: *mut c_void, pawn_handle: usize) {

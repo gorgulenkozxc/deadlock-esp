@@ -1,8 +1,8 @@
 use crate::{
-    external::{interfaces::entities::Player, External},
+    external::{External, interfaces::entities::Player},
     settings::structs::RadarSettings,
 };
-use egui::{epaint::PathShape, pos2, CornerRadius, Pos2, Rect, Stroke};
+use egui::{CornerRadius, Pos2, Rect, Stroke, epaint::PathShape, pos2};
 
 pub fn draw_radar_window(settings: &mut RadarSettings, ctx: &egui::Context) {
     let window = egui::Window::new("Radar");
